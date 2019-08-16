@@ -1,0 +1,47 @@
+---
+version: 1
+
+kind: experiment
+
+framework: pytorch
+
+tags: [examples]
+
+build:
+  image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
+  build_steps:
+    - pip install -r requirements.txt
+    - pip install https://github.com/shayansiddiqui/nn-common-modules/releases/download/v1.0/nn_common_modules-1.0-py2.py3-none-any.whl
+    - pip install tensorboardX
+  env_vars:
+    - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
+
+environment:
+  resources:
+    cpu:
+      requests: 3
+      limits: 8
+    memory:
+      requests: 5000
+      limits: 10000
+    gpu:
+      requests: 1
+      limits: 1
+
+#declarations:
+#  batch_size_train: 4
+#  batch_size_test: 4
+#  epochs: 5
+#  lr: 0.001
+#  momentum: 0.9
+#  log_interval: 100
+
+run:
+  cmd: python -u main.py
+       
+#--batch-size={{ batch_size_train }} \
+ #                        --test-batch-size={{ batch_size_test }} \
+  #                       --epochs={{ epochs }} \
+   #                      --lr={{ lr }} \
+    #                     --momentum={{ momentum }}
+     #                    --log-interval={{ log_interval }}
