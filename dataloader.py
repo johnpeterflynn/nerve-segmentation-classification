@@ -11,7 +11,6 @@ import random
 data_path = '/data/OPUS_nerve_segmentation/OPUS_data'
 
 
-
 randomcrop_size = 224
 input_size = 256
 #input_size = 400
