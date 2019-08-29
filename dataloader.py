@@ -23,6 +23,7 @@ p = 0.0 # augmentation probability
 # dataloader, augmentation, batch
 # class for custom dataset
 # read paths in __init__, actually load files in __getitem__
+# patient001 - patient012
 # =============================================================================
 
 class OPUSDataset(Dataset):   
