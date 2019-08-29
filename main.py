@@ -12,9 +12,7 @@ import quicknat as qn
 import utilz as ut
 #from tensorboardX import SummaryWriter
 from polyaxon_helper import (get_outputs_path)  
-
-################ test for gitkraken ######################
-
+import losses as lo
 
 model_path = get_outputs_path()
 results_path = get_outputs_path()
@@ -31,14 +29,14 @@ torch.backends.cudnn.benchmark = False
 # train params
 # =============================================================================
 model_name = "QuickNat"
-num_epochs = 300
+num_epochs = 100
 lr = 1e-5
 
 # =============================================================================
 # test params
 # =============================================================================
 model_name_test = "QuickNat"
-num_epochs_test = 300
+num_epochs_test = 100
 lr_test = 1e-5
 
 
@@ -53,7 +51,7 @@ opt = 'Adam'
 loss_function = 'combined'
 
 ### QuickNat
-params = {'num_channels':23,
+params = {'num_channels':31,
                         'num_filters':64,
                         'kernel_h':5,
                         'kernel_w':5,
@@ -97,7 +95,8 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
     epochs_count = np.array([])
     
     dice_score = np.array([])
-    dice_graph = list()
+    dice_graph_train = list()
+    dice_graph_val = list()
     
     loss_train = list()
     loss_val = list()
@@ -114,8 +113,9 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
         epochs_count = np.append(epochs_count, epoch)
         
         
-        ### early stopping
-        if epoch > 3 and loss_val[-3] <= loss_val[-2] <= loss_val[-1]:
+        ### early stopping (10)
+        #if epoch > 10 and loss_val[-10] <= loss_val[-9] <= loss_val[-8] <= loss_val[-7] <= loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
+        if epoch > 10 and loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
             print('early stopping')
             epoch = num_epochs + 1
             epochs_count = epochs_count[:-1]
@@ -140,38 +140,69 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     
                     inputs = x['image'].float()
                     labels = x['labels'].float()
+
+                    
+                    ### against NaN values
+                    inputs[torch.isnan(inputs)] = 0
+                    labels[torch.isnan(labels)] = 0
+                    
+                    
                 
                 ### "sanity check"
-                    #if number < 3:
-                    #    plt.figure()
-                    #    plt.xlabel('inputs' + phase)
-                    #    plt.imshow(inputs[0, 1, :, :], cmap='gray')
-                    #    plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_inputs.png'))
-                    #    plt.figure()
-                    #    plt.xlabel('labels' + phase)
-                    #    plt.imshow(labels[0, :, : ], cmap='gray')
-                    #    plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_labels.png'))
+#                    if number < 3:
+#                        plt.figure()
+#                        plt.xlabel('inputs' + phase)
+#                        plt.imshow(inputs[0, -1, :, :], cmap='gray')
+#                        plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_inputs.png'))
+#                        plt.figure()
+#                        plt.xlabel('labels' + phase)
+#                        plt.imshow(labels[0, :, :, 0], cmap='gray')
+#                        plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_labels.png'))
             
-        
+                    
+# =============================================================================
+#              median frequency balancing 
+# =============================================================================
+                    l = labels.numpy()  
+                    l = np.concatenate((l, l), axis=0)
+                    l = l[:, :, :, 0] 
+                    class_weights, weights = ut.estimate_weights_mfb(l)                  
+                    class_weights = torch.from_numpy(class_weights)
+                    weights = torch.from_numpy(weights)
+                    labels = labels[:,:,:,0]
+                    
+                    
+                  
                     inputs = inputs.to(device)
-                    labels = labels.to(device)
-                                                      
+                    labels = labels.to(device)      
+                    #labels_weighted = labels_weighted.to(device)                                                
+                    
                     # zero param gradients
                     optimizer.zero_grad()                
-                    
-          
-                    ### currently issues with new data: wavelengths/channels 21-27, model(inputs) returns 'nan'
-                    #x = torch.isnan(inputs)
-                    #print('x == 1, nan ', phase, x[x == 1])
-                    
-                    
+                         
                     ### forward
                     outputs = model(inputs)
                     
                     
-                    loss = criterion(outputs, labels.long())                
+                    ### which size does output(1) have here ?
+                    
+                    
+                    loss = criterion(outputs, labels.long()) 
+#                    if loss_function == 'combined':
+#                        loss = criterion(outputs, labels.long(), class_weights)  
+#                    if loss_function == 'dice':
+#                        loss = criterion(outputs, labels.long(), weights)
+#                    if loss_function == 'crossentropy':
+#                        loss = criterion(outputs, labels.long(), weights)   
+                        
+                    
+                    
                     running_loss += loss.item() 
                      
+                    
+                    dice_score = 1 - di(outputs, labels.long())
+                    dice_sum += dice_score.item()
+                    
                     # backward + optimize only if in training phase
                     if phase == 'train':
                         loss.backward()                  
@@ -185,15 +216,12 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                         elv = running_loss / (number + 1 )
                         epoch_loss_val = np.append(epoch_loss_val, elv)
                         
-                        outputs_prob = outputs
                         
                         ### "sanity check"
                         #plt.figure()
                         #plt.imshow(outputs_bin[0,0,:,:], cmap='gray')
                         #plt.xlabel('output training after binary 0')
                         
-                        dice_score = 1 - di(outputs_prob, labels.long())
-                        dice_sum += dice_score.item()
         
                                           
                 if phase == "val":
@@ -201,20 +229,24 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     if dice_metric_per_ep > best_metric_value:
                         best_metric_value = dice_metric_per_ep
                         best_model_wts = copy.deepcopy(model.state_dict())
-                    dice_graph = np.append(dice_graph, dice_metric_per_ep)
-                    ep_lo_va = np.mean(epoch_loss_val) ## compute average loss
+                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)
                     
+                    ep_lo_va = np.mean(epoch_loss_val) ## compute average loss
                     loss_val = np.append(loss_val, ep_lo_va)
                     
                     print('val loss per epoch: ', ep_lo_va) 
-                    print('dice score per epoch: ', dice_metric_per_ep)
+                    print('dice score_validation per epoch: ', dice_metric_per_ep)
     
                     
                 if phase == "train":
-                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss
-                    print('train loss per epoch: ', ep_lo_tr)
+                    dice_metric_per_ep = dice_sum / (number + 1)
+                    dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep)
+                    
+                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss)
                     loss_train = np.append(loss_train, ep_lo_tr)
-       
+                    
+                    print('train loss per epoch: ', ep_lo_tr)
+                    print('dice score_training per epoch: ', dice_metric_per_ep)
     
     print('FINAL dice score_best value:: ', best_metric_value)
     print('FINAL train loss: ', ep_lo_tr)
@@ -232,9 +264,10 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
         steps = 1000
     
     
-    ### dice score
+    ### dice score, val and train
     plt.figure()
-    plt.plot(epochs_count, dice_graph, label='dice_score', marker='>', markerfacecolor='black', markersize=2)
+    plt.plot(epochs_count, dice_graph_val, label='dice_score_val', marker='x', color='g', markersize=3)
+    plt.plot(epochs_count, dice_graph_train, label='dice_score_train', marker='<', color='m', markersize=1)
     plt.xticks(epochs_count[steps-1::steps])
     plt.legend()
     plt.xlabel('# of epochs')
@@ -244,7 +277,7 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
 
     ### train and val loss
     plt.figure()
-    plt.plot(epochs_count, loss_train, label='Training loss', marker='o', markerfacecolor='blue', markersize=12, linewidth=4)
+    plt.plot(epochs_count, loss_train, label='Training loss', marker='o', markersize=10, linewidth=4)
     plt.plot(epochs_count, loss_val, label='Validation loss', marker='o', markersize=4)
     plt.xticks(epochs_count[steps-1::steps])
     plt.legend()
@@ -286,13 +319,13 @@ def test(dataload_test, model_path, results_path):
         images = inputs.to(device)
         outputs = model(images)
         
-        probabilistic_pred = outputs.detach().cpu().numpy()
-        probabilistic_pred_reshaped = np.reshape(probabilistic_pred[0,1,:,:], (dl.input_size, dl.input_size))
-        #plt.figure()
-        #plt.axis('off')
-        #plt.imshow(probabilistic_pred_reshaped, cmap='gray')
-        #plt.savefig(os.path.join(results_path, '_probabilistic prediction' + '_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
-        
+#        probabilistic_pred = outputs.detach().cpu().numpy()
+#        probabilistic_pred_reshaped = np.reshape(probabilistic_pred[0,1,:,:], (dl.input_size, dl.input_size))
+#        plt.figure()
+#        plt.axis('off')
+#        plt.imshow(probabilistic_pred_reshaped, cmap='gray')
+#        plt.savefig(os.path.join(results_path, '_probabilistic prediction' + '_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
+#        
         outputs = ut.binar(outputs) ### binary output
     
         ### save binary prediction
