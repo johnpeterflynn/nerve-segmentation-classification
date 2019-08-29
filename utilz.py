@@ -44,10 +44,10 @@ def show_labels(image, labels, prediction, results_path, i):
     
     plt.figure()
     plt.imshow(image, cmap='gray')
-    aa = plt.scatter(b, a, s=1, marker='o', c='red', alpha=0.6)
+    aa = plt.scatter(b, a, s=1, marker='o', c='red', alpha=0.5)
     aa.set_label('label')
     plt.legend()
-    bb = plt.scatter(f, e, s=2, marker='o', c='blue', aplha=0.3)
+    bb = plt.scatter(f, e, s=2, marker='o', c='blue', alpha=0.1)
     bb.set_label('prediction')
     plt.legend()
     plt.axis('off')
