@@ -1,4 +1,6 @@
 
+https://github.com/shayansiddiqui/nn-common-modules/releases/download/v1.0/nn_common_modules-1.0-py2.py3-none-any.whl ; sys_platform == "linux"
+
 cloudpickle==0.8.0
 happy==1.2.1
 imageio==2.5.0

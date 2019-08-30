@@ -12,7 +12,7 @@ import quicknat as qn
 import utilz as ut
 #from tensorboardX import SummaryWriter
 from polyaxon_helper import (get_outputs_path)  
-import losses as lo
+#import losses as lo
 
 model_path = get_outputs_path()
 results_path = get_outputs_path()
@@ -29,14 +29,14 @@ torch.backends.cudnn.benchmark = False
 # train params
 # =============================================================================
 model_name = "QuickNat"
-num_epochs = 100
+num_epochs = 1
 lr = 1e-5
 
 # =============================================================================
 # test params
 # =============================================================================
 model_name_test = "QuickNat"
-num_epochs_test = 100
+num_epochs_test = 1
 lr_test = 1e-5
 
 
@@ -115,7 +115,7 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
         
         ### early stopping (10)
         #if epoch > 10 and loss_val[-10] <= loss_val[-9] <= loss_val[-8] <= loss_val[-7] <= loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
-        if epoch > 10 and loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
+        if epoch > 10 and loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
             print('early stopping')
             epoch = num_epochs + 1
             epochs_count = epochs_count[:-1]
@@ -166,9 +166,9 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     l = labels.numpy()  
                     l = np.concatenate((l, l), axis=0)
                     l = l[:, :, :, 0] 
-                    class_weights, weights = ut.estimate_weights_mfb(l)                  
-                    class_weights = torch.from_numpy(class_weights)
-                    weights = torch.from_numpy(weights)
+                    #class_weights, weights = ut.estimate_weights_mfb(l)                  
+                    #class_weights = torch.from_numpy(class_weights)
+                    #weights = torch.from_numpy(weights)
                     labels = labels[:,:,:,0]
                     
                     
