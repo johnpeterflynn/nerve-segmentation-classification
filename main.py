@@ -11,7 +11,7 @@ import network as nt
 import quicknat as qn
 import utilz as ut
 #from tensorboardX import SummaryWriter
-from polyaxon_helper import (get_outputs_path)  
+from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
 #import losses as lo
 
 model_path = get_outputs_path()
@@ -31,6 +31,7 @@ torch.backends.cudnn.benchmark = False
 model_name = "QuickNat"
 num_epochs = 1
 lr = 1e-5
+experiment = Experiment()
 
 # =============================================================================
 # test params
@@ -251,7 +252,8 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
     print('FINAL dice score_best value:: ', best_metric_value)
     print('FINAL train loss: ', ep_lo_tr)
     print('FINAL val loss: ', ep_lo_va)
-    print()
+
+    experiment.log_metrics(best_metric=best_metric_value, training_loss=ep_lo_tr, best_valid_loss=ep_lo_va)
     
     
     if num_epochs <= 10:

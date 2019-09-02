@@ -1,6 +1,4 @@
-
 https://github.com/shayansiddiqui/nn-common-modules/releases/download/v1.0/nn_common_modules-1.0-py2.py3-none-any.whl ; sys_platform == "linux"
-
 cloudpickle==0.8.0
 happy==1.2.1
 imageio==2.5.0
@@ -13,7 +11,6 @@ jupyter-client==5.2.4
 jupyter-core==4.4.0
 kiwisolver==1.0.1
 lazy-object-proxy==1.3.1
-#MarkupSafe==1.1.1
 marshmallow==3.0.0rc4
 matplotlib==3.0.2
 networkx==2.2
@@ -21,18 +18,10 @@ numpy==1.16.2
 numpydoc==0.8.0
 olefile==0.46
 packaging==19.0
-#pandas==0.24.2
 pandocfilters==1.4.2
 parso==0.3.4
 pathlib==1.0.1
 pickleshare==0.7.5
-#Pillow==5.4.1
-
-polyaxon-cli==0.4.4
-polyaxon-deploy==0.4.4
-polyaxon-schemas==0.4.4
-polyaxon-helper==0.4.4
-
 polystores==0.1.7
 prompt-toolkit==2.0.9
 psutil==5.4.7
@@ -61,3 +50,4 @@ win-inet-pton==1.1.0
 wincertstore==0.2
 wrapt==1.11.1
 marshmallow==3.0.0rc4
+polyaxon-client==0.5.6
