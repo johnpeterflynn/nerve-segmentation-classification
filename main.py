@@ -29,7 +29,7 @@ torch.backends.cudnn.benchmark = False
 # train params
 # =============================================================================
 model_name = "QuickNat"
-num_epochs = 1
+num_epochs = 30
 lr = 1e-5
 experiment = Experiment()
 
@@ -37,7 +37,7 @@ experiment = Experiment()
 # test params
 # =============================================================================
 model_name_test = "QuickNat"
-num_epochs_test = 1
+num_epochs_test = 30
 lr_test = 1e-5
 
 
@@ -52,7 +52,7 @@ opt = 'Adam'
 loss_function = 'combined'
 
 ### QuickNat
-params = {'num_channels':31,
+params = {'num_channels':4,
                         'num_filters':64,
                         'kernel_h':5,
                         'kernel_w':5,
@@ -87,7 +87,7 @@ def initialize_model(model_name):
 
 
 ### training & validation function
-def train_model(model, dataload_train, dataload_val, criterion, optimizer, 
+def train_model(model, dataload_train, dataload_val, optimizer, 
                 num_epochs):
 
     since = time.time()
@@ -141,25 +141,26 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     
                     inputs = x['image'].float()
                     labels = x['labels'].float()
-
+                    
                     
                     ### against NaN values
                     inputs[torch.isnan(inputs)] = 0
                     labels[torch.isnan(labels)] = 0
                     
                     
-                
-                ### "sanity check"
-#                    if number < 3:
+                    ## "sanity check"
+#                    if number < 2:
 #                        plt.figure()
 #                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, -1, :, :], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_inputs.png'))
+#                        plt.imshow(inputs[0, 0, :, :], cmap='gray')
+#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_inputs.png'))
+                                                      
 #                        plt.figure()
 #                        plt.xlabel('labels' + phase)
 #                        plt.imshow(labels[0, :, :, 0], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check_' + phase + str(number) + '_labels.png'))
-            
+#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_labels.png'))
+
+           
                     
 # =============================================================================
 #              median frequency balancing 
@@ -167,41 +168,51 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     l = labels.numpy()  
                     l = np.concatenate((l, l), axis=0)
                     l = l[:, :, :, 0] 
-                    #class_weights, weights = ut.estimate_weights_mfb(l)                  
-                    #class_weights = torch.from_numpy(class_weights)
-                    #weights = torch.from_numpy(weights)
-                    labels = labels[:,:,:,0]
+                    labels = labels[:,:,:,0]     
                     
+                    class_weights, weights = ut.estimate_weights_mfb(l)                  
+                    class_weights = torch.from_numpy(class_weights)
+                   
+                    weights = torch.from_numpy(weights).double()
+# =============================================================================
+# =============================================================================                   
+                                      
                     
-                  
                     inputs = inputs.to(device)
-                    labels = labels.to(device)      
-                    #labels_weighted = labels_weighted.to(device)                                                
+                    labels = labels.to(device)                                                  
                     
                     # zero param gradients
                     optimizer.zero_grad()                
                          
                     ### forward
                     outputs = model(inputs)
-                    
-                    
-                    ### which size does output(1) have here ?
-                    
-                    
-                    loss = criterion(outputs, labels.long()) 
-#                    if loss_function == 'combined':
-#                        loss = criterion(outputs, labels.long(), class_weights)  
-#                    if loss_function == 'dice':
-#                        loss = criterion(outputs, labels.long(), weights)
-#                    if loss_function == 'crossentropy':
-#                        loss = criterion(outputs, labels.long(), weights)   
+
+                   
+# =============================================================================
+# loss functions, dice loss as metric
+# =============================================================================
+### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
+                    if loss_function == 'combined':
+                        criterion = additional_losses.CombinedLoss()
+                        loss = criterion(outputs, labels.long(), class_weights) 
+                    if loss_function == 'dice':
+                        criterion = additional_losses.DiceLoss()
+                        loss = criterion(outputs.double().cpu(), labels.long().cpu(), weights)
+                    if loss_function == 'crossentropy':
+                        criterion = torch.nn.CrossEntropyLoss(weight=weights)
+                        loss = criterion(outputs.double().cpu(), labels.long().cpu()) 
                         
+                    # Dice score/ metric
+                    metric = additional_losses.DiceLoss()   
                     
+# =============================================================================
+# =============================================================================
+                                          
                     
                     running_loss += loss.item() 
                      
                     
-                    dice_score = 1 - di(outputs, labels.long())
+                    dice_score = 1 - metric(outputs, labels.long())
                     dice_sum += dice_score.item()
                     
                     # backward + optimize only if in training phase
@@ -213,7 +224,6 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                         
                         
                     if phase == 'val':
-                        
                         elv = running_loss / (number + 1 )
                         epoch_loss_val = np.append(epoch_loss_val, elv)
                         
@@ -243,7 +253,7 @@ def train_model(model, dataload_train, dataload_val, criterion, optimizer,
                     dice_metric_per_ep = dice_sum / (number + 1)
                     dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep)
                     
-                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss)
+                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss
                     loss_train = np.append(loss_train, ep_lo_tr)
                     
                     print('train loss per epoch: ', ep_lo_tr)
@@ -328,7 +338,7 @@ def test(dataload_test, model_path, results_path):
 #        plt.imshow(probabilistic_pred_reshaped, cmap='gray')
 #        plt.savefig(os.path.join(results_path, '_probabilistic prediction' + '_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
 #        
-        outputs = ut.binar(outputs) ### binary output
+        outputs = ut.binary(outputs) ### binary output
     
         ### save binary prediction
         binary_pred = np.reshape(outputs[0,1,:,:], (dl.input_size, dl.input_size))
@@ -368,25 +378,9 @@ if opt == 'Adam':
 
 
 # =============================================================================
-# loss function, dice loss as metric
-# =============================================================================
-
-### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
-if loss_function == 'combined':
-    criterion = additional_losses.CombinedLoss()
-if loss_function == 'dice':
-    criterion = additional_losses.DiceLoss()
-if loss_function == 'crossentropy':
-    criterion = torch.nn.CrossEntropyLoss()
-
-
-di = additional_losses.DiceLoss()   # dice score/ metric
-
-
-# =============================================================================
 # training
 # =============================================================================
-model = train_model(model, dl.dataload_train, dl.dataload_val, criterion, optimizer, num_epochs=num_epochs)
+model = train_model(model, dl.dataload_train, dl.dataload_val, optimizer, num_epochs=num_epochs)
 
 
 
