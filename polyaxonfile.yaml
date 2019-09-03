@@ -27,20 +27,18 @@ environment:
       requests: 1
       limits: 1
 
-#declarations:
-#  batch_size_train: 4
-#  batch_size_test: 4
-#  epochs: 5
-#  lr: 0.001
-#  momentum: 0.9
-#  log_interval: 100
+params:
+  batch_size_train: 4
+  batch_size_test: 4
+  epochs: 5
+  lr: 0.001
+  momentum: 0.9
+  log_interval: 100
 
 run:
-  cmd: python -u main.py
-       
-#--batch-size={{ batch_size_train }} \
- #                        --test-batch-size={{ batch_size_test }} \
-  #                       --epochs={{ epochs }} \
-   #                      --lr={{ lr }} \
-    #                     --momentum={{ momentum }}
-     #                    --log-interval={{ log_interval }}
+  cmd: python -u main.py --batch-size={{ batch_size_train }} \
+                        --test-batch-size={{ batch_size_test }} \
+                        --epochs={{ epochs }} \
+                        --lr={{ lr }} \
+                        --momentum={{ momentum }}
+                        --log-interval={{ log_interval }}
