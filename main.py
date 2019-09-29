@@ -5,17 +5,12 @@ import copy
 import torch
 import torch.optim as optim
 import os
-from nn_common_modules import losses as additional_losses
 import dataloader as dl
 import network as nt
 import quicknat as qn
 import utilz as ut
-#from tensorboardX import SummaryWriter
-from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
-#import losses as lo
-
-model_path = get_outputs_path()
-results_path = get_outputs_path()
+import losses as lo
+import argparse
 
 
 #to assure reproducability/ take out randomness
@@ -25,44 +20,132 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
 
-# =============================================================================
-# train params
-# =============================================================================
-model_name = "QuickNat"
-num_epochs = 30
-lr = 1e-5
-experiment = Experiment()
 
-# =============================================================================
-# test params
-# =============================================================================
-model_name_test = "QuickNat"
-num_epochs_test = 30
-lr_test = 1e-5
+parser = argparse.ArgumentParser()
+parser.add_argument(
+        '--num_channels',
+        type=int,
+        default=7
+    )
+parser.add_argument(
+        '--num_filters',
+        type=int,
+        default=64
+    )
+parser.add_argument(
+        '--kernel_h',
+        type=int,
+        default=5
+    )
+parser.add_argument(
+        '--kernel_w',
+        type=int,
+        default=5
+    )
+parser.add_argument(
+        '--kernel_c',
+        type=int,
+        default=1
+    )
+parser.add_argument(
+        '--pool',
+        type=int,
+        default=2
+    )
+parser.add_argument(
+        '--num_class',
+        type=int,
+        default=2
+    )
+parser.add_argument(
+        '--se_block',
+        default=False
+    )
+parser.add_argument(
+        '--drop_out',
+        type=float,
+        default=0.2
+    )
+parser.add_argument(
+        '--stride_conv',
+        type=int,
+        default=1
+    )
+parser.add_argument(
+        '--stride_pool',
+        type=int,
+        default=2
+    )
+parser.add_argument(
+        '--lr',
+        type=float,
+        default=1e-4
+    )
+parser.add_argument(
+        '--model_name',
+        default='QuickNat'
+    )
+parser.add_argument(
+        '--num_epochs',
+        type=int,
+        default=1
+    )
+parser.add_argument(
+        '--opt',
+        default='Adam'
+    )
+parser.add_argument(
+        '--loss_function',
+        default='dice'
+    )
+
+args = parser.parse_args()
+
+args_dict = vars(args)
+args_dict['kernel_h'] = args_dict['kernel_w']
+print(args_dict)
+
+
 
 
 # =============================================================================
 # params
 # =============================================================================
+opt = args.opt
+loss_function = args.loss_function
+model_name = args.model_name
+num_epochs = args.num_epochs
+lr = args.lr
 
-### Optimizer: SGD, Adam
-opt = 'Adam'
+### QuickNat local
+#params = {'num_channels':7,
+#                        'num_filters':64,
+#                        'kernel_h':3,
+#                        'kernel_w':3,
+#                        'kernel_c':1,
+#                        'stride_conv':1,
+#                        'pool':2,
+#                        'stride_pool':2,
+#                        'num_class':2,
+#                        'se_block': False,
+#                        'drop_out':0.2}
 
-### Loss function: combined, dice, crossentropy
-loss_function = 'combined'
 
-### QuickNat
-params = {'num_channels':4,
-                        'num_filters':64,
-                        'kernel_h':5,
-                        'kernel_w':5,
-                        'kernel_c':1,
-                        'stride_conv':1,
-                        'pool':2,
-                        'stride_pool':2,
-                        'num_class':2,
-                        'se_block': False,
-                        'drop_out':0.2}
+# =============================================================================
+# Polyaxon
+# =============================================================================
+from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
+model_path = get_outputs_path()
+results_path = get_outputs_path()
+experiment = Experiment()
+experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
+#experiment.log_params(log_learning_rate=args.log_learning_rate,
+#                      max_depth=args.max_depth,
+#                      num_rounds=args.num_rounds,
+#                      min_child_weight=args.min_child_weight)
+
+
+
 
 
 
@@ -77,8 +160,8 @@ def initialize_model(model_name):
         input_size = input_size
         print('SegNet')
         
-    if model_name == "QuickNat":
-        model_ft = qn.QuickNat(params)           
+    if model_name == 'QuickNat':
+        model_ft = qn.QuickNat(args_dict)           
         input_size = input_size
         print('QuickNat')
 
@@ -115,8 +198,8 @@ def train_model(model, dataload_train, dataload_val, optimizer,
         
         
         ### early stopping (10)
-        #if epoch > 10 and loss_val[-10] <= loss_val[-9] <= loss_val[-8] <= loss_val[-7] <= loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
-        if epoch > 10 and loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
+        if epoch > 10 and loss_val[-10] <= loss_val[-9] <= loss_val[-8] <= loss_val[-7] <= loss_val[-6] <= loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
+        #if epoch > 10 and loss_val[-5] <= loss_val[-4] <= loss_val[-3]<= loss_val[-2] <= loss_val[-1]:
             print('early stopping')
             epoch = num_epochs + 1
             epochs_count = epochs_count[:-1]
@@ -148,13 +231,18 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     labels[torch.isnan(labels)] = 0
                     
                     
-                    ## "sanity check"
-#                    if number < 2:
+                    #"sanity check"
+#                    if number < 3:
 #                        plt.figure()
 #                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, 0, :, :], cmap='gray')
+#                        plt.imshow(inputs[0, -1, :, :], cmap='gray')
 #                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_inputs.png'))
-                                                      
+
+#                        plt.figure()
+#                        plt.xlabel('inputs' + phase)
+#                        plt.imshow(inputs[0, 1, :, :], cmap='gray')
+#                        plt.savefig(os.path.join(results_path, '_sanity check2_' + phase + str(number) + '_inputs.png'))
+#                                                      
 #                        plt.figure()
 #                        plt.xlabel('labels' + phase)
 #                        plt.imshow(labels[0, :, :, 0], cmap='gray')
@@ -170,13 +258,18 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     l = l[:, :, :, 0] 
                     labels = labels[:,:,:,0]     
                     
-                    class_weights, weights = ut.estimate_weights_mfb(l)                  
-                    class_weights = torch.from_numpy(class_weights)
+                    edge_weights, class_weights = ut.estimate_weights_mfb(l)                  
+                    edge_weights = torch.from_numpy(edge_weights)
                    
-                    weights = torch.from_numpy(weights).double()
+                    class_weights = torch.from_numpy(class_weights).double()
+                    
+                    edge_weights = torch.transpose(edge_weights, 0, 2)
+                    combined_weights = torch.mul(edge_weights.double(), class_weights)
+                    combined_weights = torch.transpose(combined_weights, 0, 2)
+                                       
 # =============================================================================
-# =============================================================================                   
-                                      
+# =============================================================================                                 
+                    
                     
                     inputs = inputs.to(device)
                     labels = labels.to(device)                                                  
@@ -186,24 +279,34 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                          
                     ### forward
                     outputs = model(inputs)
-
-                   
+                    
+                    
 # =============================================================================
 # loss functions, dice loss as metric
 # =============================================================================
 ### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
-                    if loss_function == 'combined':
-                        criterion = additional_losses.CombinedLoss()
-                        loss = criterion(outputs, labels.long(), class_weights) 
+                    
+                    ### without mfb
+                    if loss_function == 'combined-':
+                        criterion = lo.CombinedLoss()
+                        loss = criterion(outputs, labels.long()) 
+                    if loss_function == 'crossentropy-':
+                        criterion = torch.nn.CrossEntropyLoss()
+                        loss = criterion(outputs, labels.long()) 
+                    
+                    ### with mfb
+                    if loss_function == 'combined+':
+                        criterion = lo.CombinedLoss()
+                        loss = criterion(outputs, labels.long(), combined_weights.cuda().float())
                     if loss_function == 'dice':
-                        criterion = additional_losses.DiceLoss()
-                        loss = criterion(outputs.double().cpu(), labels.long().cpu(), weights)
-                    if loss_function == 'crossentropy':
-                        criterion = torch.nn.CrossEntropyLoss(weight=weights)
+                        criterion = lo.DiceLoss()
+                        loss = criterion(outputs, labels.long())
+                    if loss_function == 'crossentropy+':                       
+                        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
                         loss = criterion(outputs.double().cpu(), labels.long().cpu()) 
                         
                     # Dice score/ metric
-                    metric = additional_losses.DiceLoss()   
+                    metric = lo.DiceLoss()   
                     
 # =============================================================================
 # =============================================================================
@@ -240,31 +343,27 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     if dice_metric_per_ep > best_metric_value:
                         best_metric_value = dice_metric_per_ep
                         best_model_wts = copy.deepcopy(model.state_dict())
-                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)
-                    
-                    ep_lo_va = np.mean(epoch_loss_val) ## compute average loss
+                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)  
+                    ep_lo_va = np.mean(epoch_loss_val) ## compute average loss per epoch
                     loss_val = np.append(loss_val, ep_lo_va)
                     
                     print('val loss per epoch: ', ep_lo_va) 
                     print('dice score_validation per epoch: ', dice_metric_per_ep)
-    
+                    experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
                     
                 if phase == "train":
                     dice_metric_per_ep = dice_sum / (number + 1)
-                    dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep)
-                    
-                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss
+                    dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep) 
+                    ep_lo_tr = np.mean(epoch_loss_train) ## compute average loss per epoch
                     loss_train = np.append(loss_train, ep_lo_tr)
                     
                     print('train loss per epoch: ', ep_lo_tr)
                     print('dice score_training per epoch: ', dice_metric_per_ep)
+                    experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
     
-    print('FINAL dice score_best value:: ', best_metric_value)
-    print('FINAL train loss: ', ep_lo_tr)
-    print('FINAL val loss: ', ep_lo_va)
-
-    experiment.log_metrics(best_metric=best_metric_value, training_loss=ep_lo_tr, best_valid_loss=ep_lo_va)
-    
+    print('*** FINAL dice score_val_best value *** ', best_metric_value)
+    print('*** FINAL train loss *** ', ep_lo_tr)
+    print('*** FINAL val loss*** ', ep_lo_va)
     
     if num_epochs <= 10:
         steps = 1
@@ -314,7 +413,6 @@ def train_model(model, dataload_train, dataload_val, optimizer,
 
 
 
-### testing function
 def test(dataload_test, model_path, results_path):
     print('testing')       
     
@@ -345,15 +443,13 @@ def test(dataload_test, model_path, results_path):
         #plt.figure()
         #plt.axis('off')
         #plt.imshow(binary_pred, cmap='gray')
-        #plt.savefig(os.path.join(results_path, '_binary prediction_' + str(i) + '_' + model_name_test + '_' + str(lr_test) + '_' + str(num_epochs_test) + '.png'))
+        #plt.savefig(os.path.join(results_path, '_binary prediction_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
         
         ### show labels + prediction in US image
         ut.show_labels(inputs, labels, binary_pred, results_path, i)
         
 
     return binary_pred
-
-
 
 
 
