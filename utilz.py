@@ -1,3 +1,4 @@
+from __future__ import division
 import scipy.io
 import numpy as np
 import torch
@@ -6,6 +7,7 @@ import matplotlib.pyplot as plt
 import os
 from scipy.ndimage.interpolation import map_coordinates
 from scipy import interpolate as ipol
+
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -16,6 +18,10 @@ def load_files(filename):
     if filename.endswith('.mat'):
         file = scipy.io.loadmat(filename)
         keys = file.keys()  
+        if 'opus' in keys:
+            return np.array(file['opus'])
+        if 'opus_nnmf' in keys:
+            return np.array(file['opus_nnmf'])
         if 'Recons' in keys:
             return np.array(file['Recons'])
         if 'rec_img_nnReg' in keys:            
@@ -26,12 +32,13 @@ def load_files(filename):
             return np.array(file['ROI'])
         if 'US' in keys:
             return np.array(file['US'])
+        else:
+            print('unknown format')
     
     if filename.endswith('.png'):
         return misc.imread(filename)
     
-    else:
-        print('unknown format')
+
 
 
 
@@ -39,7 +46,7 @@ def show_labels(image, labels, prediction, results_path, i):
     _, a, b, _ = np.where(labels != 0)
     e, f = np.where(prediction != 0)
     _, x, y, z = image.shape
-    image = image[0,-1,:,:] ### pick one spectrum just to show image+labels
+    image = image[0,0,:,:] ### pick one spectrum just to show image+labels
 
     
     plt.figure()
@@ -57,8 +64,7 @@ def show_labels(image, labels, prediction, results_path, i):
 
 
 
-def binar(o): 
-    
+def binary(o): 
     mean = torch.mean(o)
     bin_img = torch.where((o.cpu() > mean.cpu()), torch.tensor(1), torch.tensor(0))
     return bin_img
@@ -66,7 +72,6 @@ def binar(o):
 
 
 def norm(ar):
-    
     ar -= np.min(ar, axis=0)
     ar /= np.ptp(ar, axis=0)
     return ar
@@ -81,8 +86,21 @@ def estimate_weights_mfb(labels):
     median_freq = np.median(counts)
     weights = np.zeros(len(unique))
     for i, label in enumerate(unique):
-        class_weights += (median_freq // counts[i]) * np.array(labels == label)
-        weights[int(label)] = median_freq // counts[i]
+        class_weights += (median_freq / counts[i]) * np.array(labels == label)
+        
+        
+#        print('unique', unique)
+#        print('counts', counts)
+#        print('label: ', label)
+#        print('i', i)
+        
+        weights[int(label)] = median_freq / counts[i]
+#        
+#        print('median_freq: ', median_freq)
+#        print('counts[i]: ', counts[i])
+#        print('weights: ', weights)
+#        print('------------------------')
+        
     grads = np.gradient(labels)
     edge_weights = (grads[0] ** 2 + grads[1] ** 2) > 0
     class_weights += 2 * edge_weights
@@ -138,8 +156,6 @@ def elastic_deformation(image, x_coord, y_coord, dx, dy):
     dy_fine = ipol.griddata(coord_coarse, dy_coarse, coord_fine, method = 'cubic') # other options: 'linear'
     # get the displacements into shape of the input image (the same values in each channel)
     
-
-
     
     dx_fine = dx_fine.reshape(shape[0:2])
     dx_fine = np.stack([dx_fine]*shape[2], axis = -1)
