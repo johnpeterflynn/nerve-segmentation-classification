@@ -8,17 +8,23 @@ import torch
 import random
 
 
-data_path = '/data/OPUS_nerve_segmentation/OPUS_data'
+#data_path = '/data/OPUS_nerve_segmentation/OPUS_data_1'
+#data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
+data_path = '/data/OPUS_nerve_segmentation/OPUS_data_3'
+
+###local
+#data_path = r'C:\Users\installation\Desktop\data_archive\OPUS_data_1'
+#data_path = r'C:\Users\installation\Desktop\data_archive\OPUS_data_2'
+#data_path = r'C:\Users\installation\Desktop\data_archive\OPUS_data_3'
 
 
 
-randomcrop_size = 224
-#input_size = 256
 input_size = 400
 batch_size = 1
 num_workers = 3
-p = 0.3 # augmentation probability
+p = 0.5 # augmentation probability
 
+print('p: ', p)
 
 # =============================================================================
 # dataloader, augmentation, batch
@@ -48,42 +54,100 @@ class OPUSDataset(Dataset):
                     
             
             ## patients for training
-            self.patients_list = ('patient_001','patient_002','patient_003','patient_004','patient_005','patient_006','patient_007', 'patient_008','patient_009','patient_010', )
+            #self.patients_list = ('patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_1
+            #self.patients_list = ('patient_002', 'patient_003', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_2
+            #self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_3
+            #self.patients_list = ('patient_002','patient_003','patient_004', 'patient_005', 'patient_006', 'patient_007','patient_010', 'patient_011') # crossval_4
+            #self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009') # crossval_5
+            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007','patient_008', 'patient_009', 'patient_010') # complete
+            #self.patients_list = ('patient_001', )
+            print('self.patients_list: ', self.patients_list)
+            
             for x in self.patients_list:
                 data_path_patient = os.path.join(data_path, x)
-                 
-                # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconOA')):
-                    self.image_list.append(os.path.join(data_path_patient, 'medianus/reconOA', filename))
-                    self.image_list.append(os.path.join(data_path_patient, 'medianus/reconOA', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconUS')):
-                    self.us_list.append(os.path.join(data_path_patient, 'medianus/reconUS', filename))
-                    self.us_list.append(os.path.join(data_path_patient, 'medianus/reconUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/ROI')):
-                    self.labels_list.append(os.path.join(data_path_patient, 'medianus/ROI', filename))
-                    self.labels_list.append(os.path.join(data_path_patient, 'medianus/ROI', filename))
-                    
+
+### OPUS_data                
+#                # nervus medianus
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'medianus',' reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'medianus', 'reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'medianus', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus',' reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'medianus', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'medianus', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'medianus', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+#                    
 #                # nervus ulnaris
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris/reconOA', filename))
-#                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris/reconUS', filename))
-#                    #self.us_list.append(os.path.join(data_path_patient, 'ulnaris/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris/ROI', filename))
-#                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris/ROI', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
 #                
 #                # nervus radialis
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'radialis/reconOA', filename))
-#                    #self.image_list.append(os.path.join(data_path_patient, 'radialis/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'radialis/reconUS', filename))
-#                    #self.us_list.append(os.path.join(data_path_patient, 'radialis/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis/ROI', filename))
-#                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis/ROI', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'radialis', 'reconOA', filename))
+#                    #self.image_list.append(os.path.join(data_path_patient, 'radialis', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'radialis', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'radialis', 'reconUS', filename))
+#                    #self.us_list.append(os.path.join(data_path_patient, 'radialis', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+#                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+                
+                
+### OPUS_data_2/3
+                
+                # nervus medianus
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                    
+                # nervus ulnaris
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                
+                # nervus radialis
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                    #self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+
             
                 self.image_list.sort()
                 self.us_list.sort()
@@ -97,42 +161,63 @@ class OPUSDataset(Dataset):
             
             
             ### patients for validation
-            self.patients_list = ('patient_011', )
+            #self.patients_list = ('patient_002','patient_003') # crossval_1
+            #self.patients_list = ('patient_004','patient_005') # crossval_2
+            #self.patients_list = ('patient_006','patient_007') # crossval_3
+            #self.patients_list = ('patient_008','patient_009') # crossval_4
+            self.patients_list = ('patient_011', ) # crossval_5/ complete
+            
+            
             for x in self.patients_list:
                 data_path_patient = os.path.join(data_path, x)
 
-                # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconOA')):
-                    self.image_list.append(os.path.join(data_path_patient, 'medianus/reconOA', filename))
-                    self.image_list.append(os.path.join(data_path_patient, 'medianus/reconOA', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconUS')):
-                    self.us_list.append(os.path.join(data_path_patient, 'medianus/reconUS', filename))
-                    self.us_list.append(os.path.join(data_path_patient, 'medianus/reconUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/ROI')):
-                    self.labels_list.append(os.path.join(data_path_patient, 'medianus/ROI', filename))
-                    self.labels_list.append(os.path.join(data_path_patient, 'medianus/ROI', filename))
-                
+### OPUS_data
+#                # nervus medianus
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'medianus', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+#                
 #                # nervus ulnaris
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris/reconOA', filename))
-#                    #self.image_list.append(os.path.join(data_path_patient, 'ulnaris/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris/reconUS', filename))
-#                    #self.us_list.append(os.path.join(data_path_patient, 'ulnaris/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris/ROI', filename))
-#                    #self.labels_list.append(os.path.join(data_path_patient, 'ulnaris/ROI', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
 #                
 #                # nervus radialis
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'radialis/reconOA', filename))
-#                    #self.image_list.append(os.path.join(data_path_patient, 'radialis/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'radialis/reconUS', filename))
-#                    #self.us_list.append(os.path.join(data_path_patient, 'radialis/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis/ROI', filename))
-#                    #self.labels_list.append(os.path.join(data_path_patient, 'radialis/ROI', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'radialis', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+
+
+
+### OPUS_data_2/3
+                
+                # nervus medianus
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                    
+                # nervus ulnaris
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                
+                # nervus radialis
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))
+
             
                 self.image_list.sort()
                 self.us_list.sort()
@@ -150,30 +235,54 @@ class OPUSDataset(Dataset):
             self.patients_list = ('patient_012', )
             for x in self.patients_list:
                 data_path_patient = os.path.join(data_path, x)
-                 
+
+### OPUS_data                 
                 # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconOA')):
-                    self.image_list.append(os.path.join(data_path_patient, 'medianus/reconOA', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/reconUS')):
-                    self.us_list.append(os.path.join(data_path_patient, 'medianus/reconUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus/ROI')):
-                    self.labels_list.append(os.path.join(data_path_patient, 'medianus/ROI', filename))
-                
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'medianus', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+#                
 #                # nervus ulnaris
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris/ROI', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'ulnaris', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
 #                
 #                # nervus radialis
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconOA')):
-#                    self.image_list.append(os.path.join(data_path_patient, 'radialis/reconOA', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/reconUS')):
-#                    self.us_list.append(os.path.join(data_path_patient, 'radialis/reconUS', filename))
-#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis/ROI')):
-#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis/ROI', filename))            
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconOA')):
+#                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'reconOA', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'reconUS')):
+#                    self.us_list.append(os.path.join(data_path_patient, 'radialis', 'reconUS', filename))
+#                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+#                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename))            
+
+
+### OPUS_data_2/3
+                
+                # nervus medianus
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'medianus', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'medianus', 'ROI', filename))
+                
+                # nervus ulnaris
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'ulnaris', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'ulnaris', 'ROI', filename))
+                
+                # nervus radialis
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
+                    self.image_list.append(os.path.join(data_path_patient, 'radialis', 'OPUS', filename))
+                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
+                    self.labels_list.append(os.path.join(data_path_patient, 'radialis', 'ROI', filename)) 
+
+            
             
                 self.image_list.sort()
                 self.us_list.sort()
@@ -184,29 +293,25 @@ class OPUSDataset(Dataset):
         
 
     def __len__(self):
-        return len(self.image_list)
-            
+       return len(self.labels_list)     
    
 
     def __getitem__(self, idx):    
          
         image = load_files(self.image_list[idx])
-        us = load_files(self.us_list[idx])
-        labels = load_files(self.labels_list[idx])
+        #us = load_files(self.us_list[idx])
+        labels = load_files(self.labels_list[idx])    
         
-
         if labels.ndim < 3:
             labels = np.expand_dims(labels, axis=2)
 
-        #image = image[:,:,0:1]
+        #image = image[:,:,0:1]       
                          
         ### OPUS
-        image = np.flip(image, axis=1)
-        image = np.concatenate((image, us) , axis=2)  
+        #image = np.flip(image, axis=1)
+        #image = np.concatenate((image, us) , axis=2)  
         
-        ### US only
-        #train_image_list.append(us_train)
-        
+        ### US only: change image to us, dict
         sample = {'image' : image, 'labels' : labels}
         if self.transform:
             sample = self.transform(sample)
@@ -251,8 +356,8 @@ class elastic_deform(object):
                
         x_coo = np.random.randint(100, 300)
         y_coo = np.random.randint(100, 300)
-        dx = np.random.randint(50, 200)
-        dy = np.random.randint(50, 200)
+        dx = np.random.randint(10, 40)
+        dy = np.random.randint(10, 40)
         if random.random() < self.p:
             img = elastic_deformation(img, x_coo, y_coo, dx, dy)
             lab = elastic_deformation(lab, x_coo, y_coo, dx, dy)
@@ -277,6 +382,7 @@ class Rescale(object):
     def __call__(self, sample):
         image, labels = sample['image'], sample['labels']
         
+        
         h, w, d = image.shape[:3]
         
         if isinstance(self.output_size, int):
@@ -290,9 +396,11 @@ class Rescale(object):
             
         new_h, new_w = int(new_h), int(new_w)
         
+        
         img = transform.resize(image, (new_h, new_w, d), mode='constant')
         labels = transform.resize(labels, (new_h, new_w), mode='constant')
-
+        
+        labels = np.where(labels <= 0.5, 0, 1)  ### for loss function      
         
         return {'image': img, 'labels': labels}
 
@@ -302,8 +410,10 @@ class Rescale(object):
 class ToTensor(object):
     def __call__(self, sample):
         image, labels = sample['image'], sample['labels']
+               
         
         image = norm(image)
+        
         
         image = image.transpose((2, 0, 1))
 
@@ -311,11 +421,7 @@ class ToTensor(object):
                 'labels': torch.from_numpy(labels)}
         
         
-        
-        
 
-        
-    
 
 
 # =============================================================================
@@ -323,15 +429,18 @@ class ToTensor(object):
 # =============================================================================
         
 transformed_dataset_train = OPUSDataset('train', transform=transforms.Compose([
-        elastic_deform(p),                                  
-        RandomHorizontalFlip(p),
+        elastic_deform(p),
+        #elastic_deform(p), 
+        #elastic_deform(p), 
+        #elastic_deform(p),                                 
+        #RandomHorizontalFlip(p),
+        #elastic_deform(p),
+        #RandomHorizontalFlip(p),
         Rescale(input_size),
         ToTensor() ]))
 
           
 transformed_dataset_val = OPUSDataset('val', transform=transforms.Compose([
-        elastic_deform(p),
-        RandomHorizontalFlip(p),
         Rescale(input_size),
         ToTensor() ]))
               
@@ -349,9 +458,3 @@ dataload_test = torch.utils.data.DataLoader(transformed_dataset_test, num_worker
 
 
 print('initializing datasets and dataloaders')
-
-
-            
-            
-            
-            
