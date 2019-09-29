@@ -192,7 +192,7 @@ class CombinedLoss(_Loss):
         else:
             y_1 = torch.mean(
                 torch.mul(self.cross_entropy_loss.forward(input, target), weight))
-        return y_1 + y_2
+        return 0.3 * y_1 + 0.7 * y_2
 
 
 class CombinedLoss_KLdiv(_Loss):
