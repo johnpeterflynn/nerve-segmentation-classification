@@ -11,7 +11,7 @@ build:
   image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
   build_steps:
     - pip install -r requirements.txt
-    - pip install tensorboardX
+    #- pip install tensorboardX
   env_vars:
     - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
 
@@ -27,18 +27,38 @@ environment:
       requests: 1
       limits: 1
 
-params:
-  batch_size_train: 4
-  batch_size_test: 4
-  epochs: 5
-  lr: 0.001
-  momentum: 0.9
-  log_interval: 100
+params:  
+  num_channels: 7
+  num_filters: 64
+  kernel_h: 1
+  kernel_w: 1
+  kernel_c: 1
+  stride_conv: 1
+  pool: 2
+  stride_pool : 2
+  num_class: 2
+  se_block: False
+  drop_out: 0.2
+  lr: 0.0001
+  model_name: QuickNat
+  num_epochs: 100
+  opt: Adam
+  loss_function: dice
 
 run:
-  cmd: python -u main.py --batch-size={{ batch_size_train }} \
-                        --test-batch-size={{ batch_size_test }} \
-                        --epochs={{ epochs }} \
-                        --lr={{ lr }} \
-                        --momentum={{ momentum }}
-                        --log-interval={{ log_interval }}
+  cmd: python -u main.py --num_channels={{ num_channels }} \
+                         --num_filters={{ num_filters }} \
+                         --kernel_h={{ kernel_h }} \
+                         --kernel_w={{ kernel_w }} \
+                         --kernel_c={{ kernel_c }} \
+                         --stride_conv={{ stride_conv }}
+                         --pool={{ pool }}
+                         --stride_pool={{ stride_pool }} \
+                         --num_class={{ num_class }} \
+                         --se_block={{ se_block }} \
+                         --drop_out={{ drop_out }} \
+                         --lr={{ lr }} \
+                         --model_name={{ model_name }} \
+                         --num_epochs={{ num_epochs }} \
+                         --opt={{ opt }} \
+                         --loss_function={{ loss_function }} \
