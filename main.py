@@ -88,7 +88,7 @@ parser.add_argument(
 parser.add_argument(
         '--num_epochs',
         type=int,
-        default=1
+        default=30
     )
 parser.add_argument(
         '--opt',
@@ -229,45 +229,6 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     ### against NaN values
                     inputs[torch.isnan(inputs)] = 0
                     labels[torch.isnan(labels)] = 0
-                    
-                    
-                    #"sanity check"
-#                    if number < 3:
-#                        plt.figure()
-#                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, -1, :, :], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_inputs.png'))
-
-#                        plt.figure()
-#                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, 1, :, :], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check2_' + phase + str(number) + '_inputs.png'))
-#                                                      
-#                        plt.figure()
-#                        plt.xlabel('labels' + phase)
-#                        plt.imshow(labels[0, :, :, 0], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_labels.png'))
-
-           
-                    
-# =============================================================================
-#              median frequency balancing 
-# =============================================================================
-                    '''
-                    l = labels.numpy()
-                    l = np.concatenate((l, l), axis=0)
-                    l = l[:, :, :, 0]
-                    labels = labels[:,:,0]
-                    
-                    edge_weights, class_weights = ut.estimate_weights_mfb(l)                  
-                    edge_weights = torch.from_numpy(edge_weights)
-                   
-                    class_weights = torch.from_numpy(class_weights).double()
-                    
-                    edge_weights = torch.transpose(edge_weights, 0, 2)
-                    combined_weights = torch.mul(edge_weights.double(), class_weights)
-                    combined_weights = torch.transpose(combined_weights, 0, 2)
-                    '''
                                        
 # =============================================================================
 # =============================================================================                                 
@@ -286,9 +247,8 @@ def train_model(model, dataload_train, dataload_val, optimizer,
 # =============================================================================
 # loss functions, dice loss as metric
 # =============================================================================
-### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
 
-                    '''
+
                     ### without mfb
                     if loss_function == 'combined-':
                         criterion = lo.CombinedLoss()
@@ -299,23 +259,23 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     ### with mfb
                     if loss_function == 'combined+':
+                        raise Exception("Hey that's not implemented!")
                         criterion = lo.CombinedLoss()
                         loss = criterion(outputs, labels.long(), combined_weights.cuda().float())
                     if loss_function == 'dice':
                         criterion = lo.DiceLoss()
                         loss = criterion(outputs, labels.long())
                     if loss_function == 'crossentropy+':                       
-                        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
+                        criterion = torch.nn.CrossEntropyLoss()
                         loss = criterion(outputs.double().cpu(), labels.long().cpu()) 
                         
                     # Dice score/ metric
-                    metric = lo.DiceLoss()   
-                    '''
+                    metric = lo.DiceLoss()
                     
 # =============================================================================
 # =============================================================================
                                           
-                    '''
+
                     running_loss += loss.item() 
                      
                     
@@ -339,9 +299,9 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                         #plt.figure()
                         #plt.imshow(outputs_bin[0,0,:,:], cmap='gray')
                         #plt.xlabel('output training after binary 0')
-                     '''
-        
-                exit(100)
+
+
+
                 if phase == "val":
                     dice_metric_per_ep = dice_sum / (number + 1)
                     if dice_metric_per_ep > best_metric_value:
@@ -428,7 +388,7 @@ def test(dataload_test, model_path, results_path):
     i = 0
     for number, x in enumerate(dataload_test):
         i += 1
-        inputs, labels = x['image'].float(), x['labels'].float()
+        inputs, labels = x[0], x[1]
         
         images = inputs.to(device)
         outputs = model(images)
