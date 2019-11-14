@@ -1,0 +1,1 @@
+python main.py --num_epochs 10 --lr 0.0001 --batch_size_train 3 --train_index_start 0 --train_index_end 9 --batch_size_val 2 --val_index_start 0 --val_index_end 4 --batch_size_test 2 --test_index_start 0 --test_index_end 4 --runtime_env local

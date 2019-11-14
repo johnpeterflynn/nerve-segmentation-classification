@@ -14,6 +14,8 @@ import quicknat as qn
 import utilz as ut
 import losses as lo
 import argparse
+from util_functions.tensorboard_utils import TensorBoardLogger
+from util_functions.RuntimeEnvironment import RuntimeEnvironment
 
 
 #to assure reproducability/ take out randomness
@@ -146,6 +148,10 @@ parser.add_argument(
         type=int,
         default=10
     )
+parser.add_argument(
+        '--runtime_env',
+        default='local'     # local | colab | polyaxon
+    )
 
 
 args = parser.parse_args()
@@ -175,6 +181,15 @@ val_index_start = args.val_index_start
 val_index_end = args.val_index_end
 test_index_start = args.test_index_start
 test_index_end = args.test_index_end
+
+if args.runtime_env == 'local':
+    runtime_env = RuntimeEnvironment.LOCAL
+elif args.runtime_env == 'colab':
+    runtime_env = RuntimeEnvironment.COLAB
+elif args.runtime_env == 'polyaxon':
+    runtime_env = RuntimeEnvironment.POLYAXON
+else:
+    raise Exception("Unsupported runtime environment!")
 
 ### QuickNat local
 #params = {'num_channels':7,
@@ -227,10 +242,8 @@ def initialize_model(model_name):
     return model_ft, input_size
 
 
-
 ### training & validation function
-def train_model(model, dataload_train, dataload_val, optimizer, 
-                num_epochs):
+def train_model(model, dataload_train, dataload_val, optimizer, num_epochs, tb_logger):
 
     since = time.time()
     epoch_loss_train = np.array([])
@@ -365,12 +378,14 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     if dice_metric_per_ep > best_metric_value:
                         best_metric_value = dice_metric_per_ep
                         best_model_wts = copy.deepcopy(model.state_dict())
-                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)  
+                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)
                     ep_lo_va = np.mean(epoch_loss_val) ## compute average loss per epoch
                     loss_val = np.append(loss_val, ep_lo_va)
                     
-                    print('val loss per epoch: ', ep_lo_va) 
+                    print('val loss per epoch: ', ep_lo_va)
+                    tb_logger.add_scalar('loss/val', ep_lo_va, epoch)
                     print('dice score_validation per epoch: ', dice_metric_per_ep)
+                    tb_logger.add_scalar('dice/val', dice_metric_per_ep, epoch)
                     #experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
                     
                 if phase == "train":
@@ -380,7 +395,9 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     loss_train = np.append(loss_train, ep_lo_tr)
                     
                     print('train loss per epoch: ', ep_lo_tr)
+                    tb_logger.add_scalar('loss/train', ep_lo_tr, epoch)
                     print('dice score_training per epoch: ', dice_metric_per_ep)
+                    tb_logger.add_scalar('dice/train', dice_metric_per_ep, epoch)
                     #experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
     
     print('*** FINAL dice score_val_best value *** ', best_metric_value)
@@ -468,11 +485,14 @@ def test(dataload_test, model_path, results_path):
         #plt.savefig(os.path.join(results_path, '_binary prediction_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
         
         ### show labels + prediction in US image
-        ut.show_labels(inputs, labels, binary_pred, results_path, i)
+        #ut.show_labels(inputs, labels, binary_pred, results_path, i)
         
 
     return binary_pred
 
+
+tb_logger = TensorBoardLogger(runtime_env)
+tb_logger.init_with_ascending_naming('logs')
 
 
 # =============================================================================
@@ -507,7 +527,7 @@ dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
     val_indices=(val_index_start, val_index_end),
     test_indices=(test_index_start, test_index_end)
 )
-model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs)
+model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs, tb_logger=tb_logger)
 
 
 
@@ -516,3 +536,4 @@ model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=n
 # =============================================================================
 
 result = test(dataload_test, model_path, results_path)
+tb_logger.finish()
