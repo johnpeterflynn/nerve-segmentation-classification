@@ -113,6 +113,30 @@ parser.add_argument(
         '--batch_size_test',
         default=3
     )
+parser.add_argument(
+        '--train_index_start',
+        default=0
+    )
+parser.add_argument(
+        '--train_index_end',
+        default=10
+    )
+parser.add_argument(
+        '--val_index_start',
+        default=0
+    )
+parser.add_argument(
+        '--val_index_end',
+        default=10
+    )
+parser.add_argument(
+        '--test_index_start',
+        default=0
+    )
+parser.add_argument(
+        '--test_index_end',
+        default=10
+    )
 
 
 args = parser.parse_args()
@@ -136,6 +160,12 @@ lr = args.lr
 batch_size_train = args.batch_size_train
 batch_size_val = args.batch_size_val
 batch_size_test = args.batch_size_test
+train_index_start = args.train_index_start
+train_index_end = args.train_index_end
+val_index_start = args.val_index_start
+val_index_end = args.val_index_end
+test_index_start = args.test_index_start
+test_index_end = args.test_index_end
 
 ### QuickNat local
 #params = {'num_channels':7,
@@ -459,10 +489,15 @@ if opt == 'Adam':
 # =============================================================================
 # training
 # =============================================================================
+print(num_epochs)
 dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
     batch_size_train=batch_size_train,
     batch_size_val=batch_size_val,
-    batch_size_test=batch_size_test)
+    batch_size_test=batch_size_test,
+    train_indices=(train_index_start, train_index_end),
+    val_indices=(val_index_start, val_index_end),
+    test_indices=(test_index_start, test_index_end)
+)
 model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs)
 
 
