@@ -103,38 +103,47 @@ parser.add_argument(
     )
 parser.add_argument(
         '--batch_size_train',
+        type=int,
         default=5
     )
 parser.add_argument(
         '--batch_size_val',
+        type=int,
         default=5
     )
 parser.add_argument(
         '--batch_size_test',
+        type=int,
         default=3
     )
 parser.add_argument(
         '--train_index_start',
+        type=int,
         default=0
     )
 parser.add_argument(
         '--train_index_end',
+        type=int,
         default=10
     )
 parser.add_argument(
         '--val_index_start',
+        type=int,
         default=0
     )
 parser.add_argument(
         '--val_index_end',
+        type=int,
         default=10
     )
 parser.add_argument(
         '--test_index_start',
+        type=int,
         default=0
     )
 parser.add_argument(
         '--test_index_end',
+        type=int,
         default=10
     )
 
