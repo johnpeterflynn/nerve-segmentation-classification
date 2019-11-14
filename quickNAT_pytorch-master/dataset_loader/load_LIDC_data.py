@@ -13,28 +13,17 @@ class LIDC_IDRI(Dataset):
     
     enable_random_selection = True
 
-    def __init__(self, dataset_location, enable_random_selection=True, transform=None):
+    def __init__(self, data, enable_random_selection=True, start_index=-1, end_index=-1, transform=None):
         self.enable_random_selection = enable_random_selection
         self.transform = transform
-        max_bytes = 2**31 - 1
-        data = {}
-        for file in os.listdir(dataset_location):
-            filename = os.fsdecode(file)
-            if '.pickle' in filename:
-                print("Loading file", filename)
-                file_path = dataset_location + filename
-                bytes_in = bytearray(0)
-                input_size = os.path.getsize(file_path)
-                with open(file_path, 'rb') as f_in:
-                    for _ in range(0, input_size, max_bytes):
-                        bytes_in += f_in.read(max_bytes)
-                new_data = pickle.loads(bytes_in)
-                data.update(new_data)
-        
+
+        idx = 0
         for key, value in data.items():
-            self.images.append(value['image'].astype(float))
-            self.labels.append(value['masks'])
-            self.series_uid.append(value['series_uid'])
+            if start_index < idx < end_index:
+                self.images.append(value['image'].astype(float))
+                self.labels.append(value['masks'])
+                self.series_uid.append(value['series_uid'])
+            idx += 1
 
         assert (len(self.images) == len(self.labels) == len(self.series_uid))
 
@@ -42,9 +31,6 @@ class LIDC_IDRI(Dataset):
             assert np.max(img) <= 1 and np.min(img) >= 0
         for label in self.labels:
             assert np.max(label) <= 1 and np.min(label) >= 0
-
-        del new_data
-        del data
 
     def __getitem__(self, index):
         image = np.expand_dims(self.images[index], axis=0)

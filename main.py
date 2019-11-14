@@ -5,7 +5,7 @@ import copy
 import torch
 import torch.optim as optim
 import os
-import dataloader as dl
+import dataset_loader.lidc_loader as ldl
 import network as nt
 import quicknat as qn
 import utilz as ut
@@ -25,7 +25,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
         '--num_channels',
         type=int,
-        default=7
+        default=1
     )
 parser.add_argument(
         '--num_filters',
@@ -79,7 +79,7 @@ parser.add_argument(
 parser.add_argument(
         '--lr',
         type=float,
-        default=1e-4
+        default=1e-6
     )
 parser.add_argument(
         '--model_name',
@@ -103,6 +103,7 @@ args = parser.parse_args()
 
 args_dict = vars(args)
 args_dict['kernel_h'] = args_dict['kernel_w']
+print(args_dict)
 print(args_dict)
 
 
@@ -135,10 +136,10 @@ lr = args.lr
 # Polyaxon
 # =============================================================================
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
-model_path = get_outputs_path()
-results_path = get_outputs_path()
-experiment = Experiment()
-experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
+model_path = 'outputs/'  # get_outputs_path()
+results_path = 'outputs'  # get_outputs_path()
+#experiment = Experiment()
+#experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
 #experiment.log_params(log_learning_rate=args.log_learning_rate,
 #                      max_depth=args.max_depth,
 #                      num_rounds=args.num_rounds,
@@ -222,8 +223,7 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     dice_metric_per_ep = 0
                     
-                    inputs = x['image'].float()
-                    labels = x['labels'].float()
+                    inputs, labels = x[0], x[1]
                     
                     
                     ### against NaN values
@@ -253,10 +253,11 @@ def train_model(model, dataload_train, dataload_val, optimizer,
 # =============================================================================
 #              median frequency balancing 
 # =============================================================================
-                    l = labels.numpy()  
+                    '''
+                    l = labels.numpy()
                     l = np.concatenate((l, l), axis=0)
-                    l = l[:, :, :, 0] 
-                    labels = labels[:,:,:,0]     
+                    l = l[:, :, :, 0]
+                    labels = labels[:,:,0]
                     
                     edge_weights, class_weights = ut.estimate_weights_mfb(l)                  
                     edge_weights = torch.from_numpy(edge_weights)
@@ -266,11 +267,12 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     edge_weights = torch.transpose(edge_weights, 0, 2)
                     combined_weights = torch.mul(edge_weights.double(), class_weights)
                     combined_weights = torch.transpose(combined_weights, 0, 2)
+                    '''
                                        
 # =============================================================================
 # =============================================================================                                 
                     
-                    
+
                     inputs = inputs.to(device)
                     labels = labels.to(device)                                                  
                     
@@ -285,7 +287,8 @@ def train_model(model, dataload_train, dataload_val, optimizer,
 # loss functions, dice loss as metric
 # =============================================================================
 ### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
-                    
+
+                    '''
                     ### without mfb
                     if loss_function == 'combined-':
                         criterion = lo.CombinedLoss()
@@ -307,11 +310,12 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                         
                     # Dice score/ metric
                     metric = lo.DiceLoss()   
+                    '''
                     
 # =============================================================================
 # =============================================================================
                                           
-                    
+                    '''
                     running_loss += loss.item() 
                      
                     
@@ -335,9 +339,9 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                         #plt.figure()
                         #plt.imshow(outputs_bin[0,0,:,:], cmap='gray')
                         #plt.xlabel('output training after binary 0')
-                        
+                     '''
         
-                                          
+                exit(100)
                 if phase == "val":
                     dice_metric_per_ep = dice_sum / (number + 1)
                     if dice_metric_per_ep > best_metric_value:
@@ -349,7 +353,7 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     print('val loss per epoch: ', ep_lo_va) 
                     print('dice score_validation per epoch: ', dice_metric_per_ep)
-                    experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
+                    #experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
                     
                 if phase == "train":
                     dice_metric_per_ep = dice_sum / (number + 1)
@@ -359,7 +363,7 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     print('train loss per epoch: ', ep_lo_tr)
                     print('dice score_training per epoch: ', dice_metric_per_ep)
-                    experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
+                    #experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
     
     print('*** FINAL dice score_val_best value *** ', best_metric_value)
     print('*** FINAL train loss *** ', ep_lo_tr)
@@ -476,7 +480,8 @@ if opt == 'Adam':
 # =============================================================================
 # training
 # =============================================================================
-model = train_model(model, dl.dataload_train, dl.dataload_val, optimizer, num_epochs=num_epochs)
+dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders()
+model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs)
 
 
 
@@ -484,4 +489,4 @@ model = train_model(model, dl.dataload_train, dl.dataload_val, optimizer, num_ep
 # testing
 # =============================================================================
 
-result = test(dl.dataload_test, model_path, results_path)
+result = test(dataload_test, model_path, results_path)
