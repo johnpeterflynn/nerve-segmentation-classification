@@ -461,7 +461,7 @@ def test(dataload_test, model_path, results_path):
         outputs = ut.binary(outputs) ### binary output
     
         ### save binary prediction
-        binary_pred = np.reshape(outputs[0,1,:,:], (dl.input_size, dl.input_size))
+        binary_pred = np.reshape(outputs[0,1,:,:], (128, 128))
         #plt.figure()
         #plt.axis('off')
         #plt.imshow(binary_pred, cmap='gray')
