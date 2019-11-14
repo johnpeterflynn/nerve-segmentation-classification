@@ -98,6 +98,19 @@ parser.add_argument(
         '--loss_function',
         default='dice'
     )
+parser.add_argument(
+        '--batch_size_train',
+        default=5
+    )
+parser.add_argument(
+        '--batch_size_val',
+        default=5
+    )
+parser.add_argument(
+        '--batch_size_test',
+        default=3
+    )
+
 
 args = parser.parse_args()
 
@@ -117,6 +130,9 @@ loss_function = args.loss_function
 model_name = args.model_name
 num_epochs = args.num_epochs
 lr = args.lr
+batch_size_train = args.batch_size_train
+batch_size_val = args.batch_size_val
+batch_size_test = args.batch_size_test
 
 ### QuickNat local
 #params = {'num_channels':7,
@@ -440,7 +456,10 @@ if opt == 'Adam':
 # =============================================================================
 # training
 # =============================================================================
-dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders()
+dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
+    batch_size_train=batch_size_train,
+    batch_size_val=batch_size_val,
+    batch_size_test=batch_size_test)
 model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs)
 
 

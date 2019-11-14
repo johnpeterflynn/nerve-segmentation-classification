@@ -6,47 +6,41 @@ from torchvision import transforms
 import torch
 from dataset_loader.load_LIDC_data import LIDC_IDRI
 
-LIDC_PATH = 'data/'
-
-TRAIN_INDICES = (0, 50)
-VAL_INDICES = (60, 75)
-TEST_INDICES = (90, 100)
-
-TRAIN_BATCH_SIZE = 5
-VAL_BATCH_SIZE = 5
-TEST_BATCH_SIZE = 3
-
 
 def load_pickle_file(dataset_location):
     max_bytes = 2 ** 31 - 1
     data = {}
-    for file in os.listdir(dataset_location):
-        filename = os.fsdecode(file)
-        if '.pickle' in filename:
-            print("Loading file", filename)
-            file_path = dataset_location + filename
-            bytes_in = bytearray(0)
-            input_size = os.path.getsize(file_path)
-            with open(file_path, 'rb') as f_in:
-                for _ in range(0, input_size, max_bytes):
-                    bytes_in += f_in.read(max_bytes)
-            new_data = pickle.loads(bytes_in)
-            data.update(new_data)
+    new_data = None
+    print("Loading file", dataset_location)
+    bytes_in = bytearray(0)
+    input_size = os.path.getsize(dataset_location)
+    with open(dataset_location, 'rb') as f_in:
+        for _ in range(0, input_size, max_bytes):
+            bytes_in += f_in.read(max_bytes)
+    new_data = pickle.loads(bytes_in)
+    data.update(new_data)
+
     del new_data
     return data
 
 
-def get_lidc_loaders():
-    lidc_data = load_pickle_file(LIDC_PATH)
+def get_lidc_loaders(dataset_path='data/data_lidc.pickle',
+                     batch_size_train=5,
+                     batch_size_val=5,
+                     batch_size_test=3,
+                     train_indices=(0, 50),
+                     val_indices=(60, 75),
+                     test_indices=(90, 100)):
+    lidc_data = load_pickle_file(dataset_path)
 
-    train_dataset = LIDC_IDRI(lidc_data, False, TRAIN_INDICES[0], TRAIN_INDICES[1])
-    val_dataset = LIDC_IDRI(lidc_data, False, VAL_INDICES[0], VAL_INDICES[1])
-    test_dataset = LIDC_IDRI(lidc_data, False, TEST_INDICES[0], TEST_INDICES[1])
+    train_dataset = LIDC_IDRI(lidc_data, False, train_indices[0], train_indices[1])
+    val_dataset = LIDC_IDRI(lidc_data, False, val_indices[0], val_indices[1])
+    test_dataset = LIDC_IDRI(lidc_data, False, test_indices[0], test_indices[1])
     del lidc_data
 
-    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=TRAIN_BATCH_SIZE, shuffle=False)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=VAL_BATCH_SIZE, shuffle=False)
-    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=TEST_BATCH_SIZE, shuffle=False)
+    train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size_train, shuffle=False)
+    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size_val, shuffle=False)
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=batch_size_test, shuffle=False)
 
     print("Dataloaders are ready!")
 
