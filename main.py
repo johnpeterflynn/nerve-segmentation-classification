@@ -1,10 +1,13 @@
+import sys
+import os
+sys.path.append(os.getcwd() + "/quickNAT_pytorch-master")
+
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import copy
 import torch
 import torch.optim as optim
-import os
 import dataset_loader.lidc_loader as ldl
 import network as nt
 import quicknat as qn
