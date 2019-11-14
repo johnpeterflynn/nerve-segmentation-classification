@@ -1,2 +1,3 @@
 .polyaxon
 __pycache__
+/quickNAT_pytorch-master/datasets/data_lidc.pickle
