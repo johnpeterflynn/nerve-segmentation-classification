@@ -522,7 +522,9 @@ if opt == 'Adam':
 # training
 # =============================================================================
 print(num_epochs)
+dataset_path = '/data/LIDC/data_lidc.pickle' if RuntimeEnvironment.POLYAXON else 'data/data_lidc.pickle'
 dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
+    dataset_path=dataset_path,
     batch_size_train=batch_size_train,
     batch_size_val=batch_size_val,
     batch_size_test=batch_size_test,
