@@ -7,6 +7,7 @@ import torch
 import torch.utils.data as data
 from torchvision import transforms
 import utils.preprocessor as preprocessor
+from utils.lidc_data import LIDC_IDRI
 
 transform_train = transforms.Compose([
     transforms.RandomCrop(200, padding=56),
@@ -32,15 +33,23 @@ class ImdbData(data.Dataset):
 
 
 def get_imdb_dataset(data_params):
-    data_train = h5py.File(os.path.join(data_params['data_dir'], data_params['train_data_file']), 'r')
-    label_train = h5py.File(os.path.join(data_params['data_dir'], data_params['train_label_file']), 'r')
-    class_weight_train = h5py.File(os.path.join(data_params['data_dir'], data_params['train_class_weights_file']), 'r')
-    weight_train = h5py.File(os.path.join(data_params['data_dir'], data_params['train_weights_file']), 'r')
+    data_train = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['train_data_file']), 'r')
+    label_train = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['train_label_file']), 'r')
+    class_weight_train = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['train_class_weights_file']), 'r')
+    weight_train = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['train_weights_file']), 'r')
 
-    data_test = h5py.File(os.path.join(data_params['data_dir'], data_params['test_data_file']), 'r')
-    label_test = h5py.File(os.path.join(data_params['data_dir'], data_params['test_label_file']), 'r')
-    class_weight_test = h5py.File(os.path.join(data_params['data_dir'], data_params['test_class_weights_file']), 'r')
-    weight_test = h5py.File(os.path.join(data_params['data_dir'], data_params['test_weights_file']), 'r')
+    data_test = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['test_data_file']), 'r')
+    label_test = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['test_label_file']), 'r')
+    class_weight_test = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['test_class_weights_file']), 'r')
+    weight_test = h5py.File(os.path.join(
+        data_params['data_dir'], data_params['test_weights_file']), 'r')
 
     return (ImdbData(data_train['data'][()], label_train['label'][()], class_weight_train['class_weights'][()],
                      transforms=transform_train),
@@ -93,10 +102,12 @@ def load_and_preprocess(file_path, orientation, remap_config, reduce_slices=Fals
 
 
 def load_data(file_path, orientation):
+    nb.Nifti1Header.quaternion_threshold = -1e-06
     volume_nifty, labelmap_nifty = nb.load(file_path[0]), nb.load(file_path[1])
     volume, labelmap = volume_nifty.get_fdata(), labelmap_nifty.get_fdata()
     volume = (volume - np.min(volume)) / (np.max(volume) - np.min(volume))
-    volume, labelmap = preprocessor.rotate_orientation(volume, labelmap, orientation)
+    volume, labelmap = preprocessor.rotate_orientation(
+        volume, labelmap, orientation)
     return volume, labelmap, volume_nifty.header
 
 
@@ -117,31 +128,7 @@ def preprocess(volume, labelmap, remap_config, reduce_slices=False, remove_black
         return volume, labelmap, None, None
 
 
-# def load_file_paths(data_dir, label_dir, volumes_txt_file=None):
-#     """
-#     This function returns the file paths combined as a list where each element is a 2 element tuple, 0th being data and 1st being label.
-#     It should be modified to suit the need of the project
-#     :param data_dir: Directory which contains the data files
-#     :param label_dir: Directory which contains the label files
-#     :param volumes_txt_file: (Optional) Path to the a csv file, when provided only these data points will be read
-#     :return: list of file paths as string
-#     """
-#
-#     volume_exclude_list = ['IXI290', 'IXI423']
-#     if volumes_txt_file:
-#         with open(volumes_txt_file) as file_handle:
-#             volumes_to_use = file_handle.read().splitlines()
-#     else:
-#         volumes_to_use = [name for name in os.listdir(data_dir) if
-#                           name.startswith('IXI') and name not in volume_exclude_list]
-#
-#     file_paths = [
-#         [os.path.join(data_dir, vol, 'mri/orig.mgz'), os.path.join(label_dir, vol, 'mri/aseg.auto_noCCseg.mgz')]
-#         for
-#         vol in volumes_to_use]
-#     return file_paths
-
-def load_file_paths(data_dir, label_dir, volumes_txt_file=None):
+def load_file_paths(data_dir, label_dir, volumes_txt_file=None, eval=False):
     """
     This function returns the file paths combined as a list where each element is a 2 element tuple, 0th being data and 1st being label.
     It should be modified to suit the need of the project
@@ -158,8 +145,29 @@ def load_file_paths(data_dir, label_dir, volumes_txt_file=None):
     else:
         volumes_to_use = [name for name in os.listdir(data_dir)]
 
-    file_paths = [
-        [os.path.join(data_dir, vol, 'mri/orig.mgz'), os.path.join(label_dir, vol+'_glm.mgz')]
-        for
-        vol in volumes_to_use]
+    if eval:
+        file_paths = [
+            [os.path.join(data_dir, vol + ".nii.gz"),
+             os.path.join(label_dir, vol+'.nii.gz')]
+            for
+            vol in volumes_to_use]
+    else:
+
+        file_paths = [
+            [os.path.join(data_dir, vol + ".nii.gz"),
+             os.path.join(label_dir, vol+'.nii.gz')]
+            for
+            vol in volumes_to_use]
     return file_paths
+
+
+def get_lidc_dataset(data_params):
+    
+    dataset = LIDC_IDRI(dataset_location = data_params['data_dir'])
+    dataset_size = len(dataset)
+    indices = list(range(dataset_size))
+    split = int(np.floor(0.1 * dataset_size))
+    np.random.shuffle(indices)
+    train_indices, test_indices = indices[split:], indices[:split]
+    
+    return dataset, train_indices, test_indices
