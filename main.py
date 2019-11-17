@@ -221,7 +221,13 @@ experiment = Experiment()
 experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
 experiment.log_params(learning_rate=args.lr,
                       num_epochs=args.num_epochs,
-                      model_name=args.model_name)
+                      model_name=args.model_name,
+                      train_index_start=args.train_index_start,
+                      train_index_end=args.train_index_end,
+                      val_index_start=args.val_index_start,
+                      val_index_end=args.val_index_end,
+                      test_index_start=args.test_index_start,
+                      test_index_end=args.test_index_end)
 
 
 

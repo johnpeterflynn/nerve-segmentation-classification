@@ -44,6 +44,16 @@ params:
   num_epochs: 100
   opt: Adam
   loss_function: dice
+  batch_size_train: 5
+  batch_size_val: 5
+  batch_size_test: 5
+  train_index_start: 0
+  train_index_end: 100
+  val_index_start: 200
+  val_index_end: 210
+  test_index_start: 300
+  test_index_end: 310
+  runtime_env: polyaxon
 
 run:
   cmd: python -u main.py --num_channels={{ num_channels }} \
@@ -62,3 +72,13 @@ run:
                          --num_epochs={{ num_epochs }} \
                          --opt={{ opt }} \
                          --loss_function={{ loss_function }} \
+                         --batch_size_train={{ batch_size_train }} \
+                         --batch_size_val={{ batch_size_val }} \
+                         --batch_size_test={{ batch_size_test }} \
+                         --train_index_start={{ train_index_start }} \
+                         --train_index_end={{ train_index_end }} \
+                         --val_index_start={{ val_index_start }} \
+                         --val_index_end={{ val_index_end }} \
+                         --test_index_start={{ test_index_start }} \
+                         --test_index_end={{ test_index_end }} \
+                         --runtime_env={{ runtime_env }} \
