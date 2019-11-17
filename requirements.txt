@@ -52,4 +52,3 @@ wrapt==1.11.1
 marshmallow==3.0.0rc4
 polyaxon-client==0.5.6
 tensorboardX==1.9.0
-tensorboardcolab==0.0.22
