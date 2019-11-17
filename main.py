@@ -14,7 +14,7 @@ import quicknat as qn
 import utilz as ut
 import losses as lo
 import argparse
-from util_functions.tensorboard_utils import TensorBoardLogger
+from util_functions.Logger import TensorBoardLogger
 from util_functions.RuntimeEnvironment import RuntimeEnvironment
 
 
@@ -209,18 +209,19 @@ else:
 # Polyaxon
 # =============================================================================
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
-model_path = 'outputs/'  # get_outputs_path()
-results_path = 'outputs'  # get_outputs_path()
-#experiment = Experiment()
-#experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
-#experiment.log_params(log_learning_rate=args.log_learning_rate,
-#                      max_depth=args.max_depth,
-#                      num_rounds=args.num_rounds,
-#                      min_child_weight=args.min_child_weight)
 
+if runtime_env in [RuntimeEnvironment.LOCAL, RuntimeEnvironment.COLAB]:
+    model_path = 'outputs/'  # get_outputs_path()
+    results_path = 'outputs/'  # get_outputs_path()
+else:
+    model_path = get_outputs_path()
+    results_path = get_outputs_path()
 
-
-
+experiment = Experiment()
+experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
+experiment.log_params(learning_rate=args.lr,
+                      num_epochs=args.num_epochs,
+                      model_name=args.model_name)
 
 
 
@@ -383,11 +384,9 @@ def train_model(model, dataload_train, dataload_val, optimizer, num_epochs, tb_l
                     loss_val = np.append(loss_val, ep_lo_va)
                     
                     print('val loss per epoch: ', ep_lo_va)
-                    tb_logger.add_scalar('loss/val', ep_lo_va, epoch)
                     print('dice score_validation per epoch: ', dice_metric_per_ep)
-                    tb_logger.add_scalar('dice/val', dice_metric_per_ep, epoch)
-                    #experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
-                    
+                    tb_logger.log_metrics(epoch, val_loss=ep_lo_va, val_dice=dice_metric_per_ep)
+
                 if phase == "train":
                     dice_metric_per_ep = dice_sum / (number + 1)
                     dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep) 
@@ -395,11 +394,9 @@ def train_model(model, dataload_train, dataload_val, optimizer, num_epochs, tb_l
                     loss_train = np.append(loss_train, ep_lo_tr)
                     
                     print('train loss per epoch: ', ep_lo_tr)
-                    tb_logger.add_scalar('loss/train', ep_lo_tr, epoch)
                     print('dice score_training per epoch: ', dice_metric_per_ep)
-                    tb_logger.add_scalar('dice/train', dice_metric_per_ep, epoch)
-                    #experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
-    
+                    tb_logger.log_metrics(epoch, train_loss=ep_lo_tr, train_dice=dice_metric_per_ep)
+
     print('*** FINAL dice score_val_best value *** ', best_metric_value)
     print('*** FINAL train loss *** ', ep_lo_tr)
     print('*** FINAL val loss*** ', ep_lo_va)
@@ -491,7 +488,7 @@ def test(dataload_test, model_path, results_path):
     return binary_pred
 
 
-tb_logger = TensorBoardLogger(runtime_env)
+tb_logger = TensorBoardLogger(experiment)
 tb_logger.init_with_ascending_naming('logs')
 
 
