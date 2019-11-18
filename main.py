@@ -1,16 +1,22 @@
+import sys
+import os
+sys.path.append(os.getcwd() + "/quickNAT_pytorch-master")
+
 import numpy as np
 import matplotlib.pyplot as plt
 import time
 import copy
 import torch
 import torch.optim as optim
-import os
-import dataloader as dl
+import dataset_loader.lidc_loader as ldl
 import network as nt
 import quicknat as qn
 import utilz as ut
 import losses as lo
 import argparse
+from util_functions.Logger import TensorBoardLogger
+from util_functions.RuntimeEnvironment import RuntimeEnvironment
+import util_functions.checkpoint_utils as ckp_utils
 
 
 #to assure reproducability/ take out randomness
@@ -25,7 +31,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
         '--num_channels',
         type=int,
-        default=7
+        default=1
     )
 parser.add_argument(
         '--num_filters',
@@ -79,7 +85,7 @@ parser.add_argument(
 parser.add_argument(
         '--lr',
         type=float,
-        default=1e-4
+        default=1e-6
     )
 parser.add_argument(
         '--model_name',
@@ -88,7 +94,7 @@ parser.add_argument(
 parser.add_argument(
         '--num_epochs',
         type=int,
-        default=1
+        default=30
     )
 parser.add_argument(
         '--opt',
@@ -98,11 +104,72 @@ parser.add_argument(
         '--loss_function',
         default='dice'
     )
+parser.add_argument(
+        '--batch_size_train',
+        type=int,
+        default=5
+    )
+parser.add_argument(
+        '--batch_size_val',
+        type=int,
+        default=5
+    )
+parser.add_argument(
+        '--batch_size_test',
+        type=int,
+        default=3
+    )
+parser.add_argument(
+        '--train_index_start',
+        type=int,
+        default=0
+    )
+parser.add_argument(
+        '--train_index_end',
+        type=int,
+        default=10
+    )
+parser.add_argument(
+        '--val_index_start',
+        type=int,
+        default=0
+    )
+parser.add_argument(
+        '--val_index_end',
+        type=int,
+        default=10
+    )
+parser.add_argument(
+        '--test_index_start',
+        type=int,
+        default=0
+    )
+parser.add_argument(
+        '--test_index_end',
+        type=int,
+        default=10
+    )
+parser.add_argument(
+        '--runtime_env',
+        default='local'     # local | colab | polyaxon
+    )
+parser.add_argument(
+        '--num_graders',
+        type=int,
+        default=1
+    )
+parser.add_argument(
+        '--chekpoint_interval',
+        type=int,
+        default=20     # in epochs
+    )
+
 
 args = parser.parse_args()
 
 args_dict = vars(args)
 args_dict['kernel_h'] = args_dict['kernel_w']
+print(args_dict)
 print(args_dict)
 
 
@@ -116,6 +183,26 @@ loss_function = args.loss_function
 model_name = args.model_name
 num_epochs = args.num_epochs
 lr = args.lr
+batch_size_train = args.batch_size_train
+batch_size_val = args.batch_size_val
+batch_size_test = args.batch_size_test
+train_index_start = args.train_index_start
+train_index_end = args.train_index_end
+val_index_start = args.val_index_start
+val_index_end = args.val_index_end
+test_index_start = args.test_index_start
+test_index_end = args.test_index_end
+num_graders = args.num_graders
+chekpoint_interval = args.chekpoint_interval
+
+if args.runtime_env == 'local':
+    runtime_env = RuntimeEnvironment.LOCAL
+elif args.runtime_env == 'colab':
+    runtime_env = RuntimeEnvironment.COLAB
+elif args.runtime_env == 'polyaxon':
+    runtime_env = RuntimeEnvironment.POLYAXON
+else:
+    raise Exception("Unsupported runtime environment!")
 
 ### QuickNat local
 #params = {'num_channels':7,
@@ -135,18 +222,25 @@ lr = args.lr
 # Polyaxon
 # =============================================================================
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
-model_path = get_outputs_path()
-results_path = get_outputs_path()
+
+if runtime_env in [RuntimeEnvironment.LOCAL, RuntimeEnvironment.COLAB]:
+    model_path = 'outputs/'  # get_outputs_path()
+    results_path = 'outputs/'  # get_outputs_path()
+else:
+    model_path = get_outputs_path()
+    results_path = get_outputs_path()
+
 experiment = Experiment()
 experiment.set_name(str(args.lr).replace('.', '_') + '-' + str(args.num_epochs) + '-' + args.model_name + '-' + args.opt + '-' + args.loss_function + '-' + str(args.kernel_h))
-#experiment.log_params(log_learning_rate=args.log_learning_rate,
-#                      max_depth=args.max_depth,
-#                      num_rounds=args.num_rounds,
-#                      min_child_weight=args.min_child_weight)
-
-
-
-
+experiment.log_params(learning_rate=args.lr,
+                      num_epochs=args.num_epochs,
+                      model_name=args.model_name,
+                      train_index_start=args.train_index_start,
+                      train_index_end=args.train_index_end,
+                      val_index_start=args.val_index_start,
+                      val_index_end=args.val_index_end,
+                      test_index_start=args.test_index_start,
+                      test_index_end=args.test_index_end)
 
 
 
@@ -168,10 +262,8 @@ def initialize_model(model_name):
     return model_ft, input_size
 
 
-
 ### training & validation function
-def train_model(model, dataload_train, dataload_val, optimizer, 
-                num_epochs):
+def train_model(model, dataload_train, dataload_val, optimizer, num_epochs, tb_logger):
 
     since = time.time()
     epoch_loss_train = np.array([])
@@ -222,55 +314,17 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     dice_metric_per_ep = 0
                     
-                    inputs = x['image'].float()
-                    labels = x['labels'].float()
+                    inputs, labels = x[0], x[1]
                     
                     
                     ### against NaN values
                     inputs[torch.isnan(inputs)] = 0
                     labels[torch.isnan(labels)] = 0
-                    
-                    
-                    #"sanity check"
-#                    if number < 3:
-#                        plt.figure()
-#                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, -1, :, :], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_inputs.png'))
-
-#                        plt.figure()
-#                        plt.xlabel('inputs' + phase)
-#                        plt.imshow(inputs[0, 1, :, :], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check2_' + phase + str(number) + '_inputs.png'))
-#                                                      
-#                        plt.figure()
-#                        plt.xlabel('labels' + phase)
-#                        plt.imshow(labels[0, :, :, 0], cmap='gray')
-#                        plt.savefig(os.path.join(results_path, '_sanity check1_' + phase + str(number) + '_labels.png'))
-
-           
-                    
-# =============================================================================
-#              median frequency balancing 
-# =============================================================================
-                    l = labels.numpy()  
-                    l = np.concatenate((l, l), axis=0)
-                    l = l[:, :, :, 0] 
-                    labels = labels[:,:,:,0]     
-                    
-                    edge_weights, class_weights = ut.estimate_weights_mfb(l)                  
-                    edge_weights = torch.from_numpy(edge_weights)
-                   
-                    class_weights = torch.from_numpy(class_weights).double()
-                    
-                    edge_weights = torch.transpose(edge_weights, 0, 2)
-                    combined_weights = torch.mul(edge_weights.double(), class_weights)
-                    combined_weights = torch.transpose(combined_weights, 0, 2)
                                        
 # =============================================================================
 # =============================================================================                                 
                     
-                    
+
                     inputs = inputs.to(device)
                     labels = labels.to(device)                                                  
                     
@@ -284,8 +338,8 @@ def train_model(model, dataload_train, dataload_val, optimizer,
 # =============================================================================
 # loss functions, dice loss as metric
 # =============================================================================
-### https://github.com/ai-med/nn-common-modules/blob/master/nn_common_modules/losses.py
-                    
+
+
                     ### without mfb
                     if loss_function == 'combined-':
                         criterion = lo.CombinedLoss()
@@ -296,22 +350,23 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     ### with mfb
                     if loss_function == 'combined+':
+                        raise Exception("Hey that's not implemented!")
                         criterion = lo.CombinedLoss()
                         loss = criterion(outputs, labels.long(), combined_weights.cuda().float())
                     if loss_function == 'dice':
                         criterion = lo.DiceLoss()
                         loss = criterion(outputs, labels.long())
                     if loss_function == 'crossentropy+':                       
-                        criterion = torch.nn.CrossEntropyLoss(weight=class_weights)
+                        criterion = torch.nn.CrossEntropyLoss()
                         loss = criterion(outputs.double().cpu(), labels.long().cpu()) 
                         
                     # Dice score/ metric
-                    metric = lo.DiceLoss()   
+                    metric = lo.DiceLoss()
                     
 # =============================================================================
 # =============================================================================
                                           
-                    
+
                     running_loss += loss.item() 
                      
                     
@@ -335,22 +390,22 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                         #plt.figure()
                         #plt.imshow(outputs_bin[0,0,:,:], cmap='gray')
                         #plt.xlabel('output training after binary 0')
-                        
-        
-                                          
+
+
+
                 if phase == "val":
                     dice_metric_per_ep = dice_sum / (number + 1)
                     if dice_metric_per_ep > best_metric_value:
                         best_metric_value = dice_metric_per_ep
                         best_model_wts = copy.deepcopy(model.state_dict())
-                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)  
+                    dice_graph_val = np.append(dice_graph_val, dice_metric_per_ep)
                     ep_lo_va = np.mean(epoch_loss_val) ## compute average loss per epoch
                     loss_val = np.append(loss_val, ep_lo_va)
                     
-                    print('val loss per epoch: ', ep_lo_va) 
+                    print('val loss per epoch: ', ep_lo_va)
                     print('dice score_validation per epoch: ', dice_metric_per_ep)
-                    experiment.log_metrics(val_loss=ep_lo_va, dice_score_val=dice_metric_per_ep)
-                    
+                    tb_logger.log_metrics(epoch, val_loss=ep_lo_va, val_dice=dice_metric_per_ep)
+
                 if phase == "train":
                     dice_metric_per_ep = dice_sum / (number + 1)
                     dice_graph_train = np.append(dice_graph_train, dice_metric_per_ep) 
@@ -359,8 +414,17 @@ def train_model(model, dataload_train, dataload_val, optimizer,
                     
                     print('train loss per epoch: ', ep_lo_tr)
                     print('dice score_training per epoch: ', dice_metric_per_ep)
-                    experiment.log_metrics(train_loss=ep_lo_tr, dice_score_train=dice_metric_per_ep)
-    
+                    tb_logger.log_metrics(epoch, train_loss=ep_lo_tr, train_dice=dice_metric_per_ep)
+
+                if epoch > 0 and epoch % chekpoint_interval == 0:
+                    checkpoint = {
+                        'epoch': epoch,
+                        'state_dict': model.state_dict(),
+                        'optimizer': optimizer.state_dict()
+                    }
+                    ckp_utils.save_ckp(checkpoint, results_path, False, results_path)
+
+
     print('*** FINAL dice score_val_best value *** ', best_metric_value)
     print('*** FINAL train loss *** ', ep_lo_tr)
     print('*** FINAL val loss*** ', ep_lo_va)
@@ -424,7 +488,7 @@ def test(dataload_test, model_path, results_path):
     i = 0
     for number, x in enumerate(dataload_test):
         i += 1
-        inputs, labels = x['image'].float(), x['labels'].float()
+        inputs, labels = x[0], x[1]
         
         images = inputs.to(device)
         outputs = model(images)
@@ -439,18 +503,21 @@ def test(dataload_test, model_path, results_path):
         outputs = ut.binary(outputs) ### binary output
     
         ### save binary prediction
-        binary_pred = np.reshape(outputs[0,1,:,:], (dl.input_size, dl.input_size))
+        binary_pred = np.reshape(outputs[0,1,:,:], (128, 128))
         #plt.figure()
         #plt.axis('off')
         #plt.imshow(binary_pred, cmap='gray')
         #plt.savefig(os.path.join(results_path, '_binary prediction_' + str(i) + '_' + model_name + '_' + str(lr) + '_' + str(num_epochs) + '.png'))
         
         ### show labels + prediction in US image
-        ut.show_labels(inputs, labels, binary_pred, results_path, i)
+        #ut.show_labels(inputs, labels, binary_pred, results_path, i)
         
 
     return binary_pred
 
+
+tb_logger = TensorBoardLogger(experiment)
+tb_logger.init_with_ascending_naming(os.path.join(results_path, 'logs'))
 
 
 # =============================================================================
@@ -476,12 +543,31 @@ if opt == 'Adam':
 # =============================================================================
 # training
 # =============================================================================
-model = train_model(model, dl.dataload_train, dl.dataload_val, optimizer, num_epochs=num_epochs)
+print(num_epochs)
+dataset_path = '/data/LIDC/data_lidc.pickle' if runtime_env is RuntimeEnvironment.POLYAXON else 'data/data_lidc.pickle'
+dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
+    dataset_path=dataset_path,
+    batch_size_train=batch_size_train,
+    batch_size_val=batch_size_val,
+    batch_size_test=batch_size_test,
+    train_indices=(train_index_start, train_index_end),
+    val_indices=(val_index_start, val_index_end),
+    test_indices=(test_index_start, test_index_end),
+    num_graders=num_graders
+)
+model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs, tb_logger=tb_logger)
 
+checkpoint = {
+    'epoch': num_epochs,
+    'state_dict': model.state_dict(),
+    'optimizer': optimizer.state_dict()
+}
+ckp_utils.save_ckp(checkpoint, results_path, False, results_path)
 
 
 # =============================================================================
 # testing
 # =============================================================================
 
-result = test(dl.dataload_test, model_path, results_path)
+result = test(dataload_test, model_path, results_path)
+tb_logger.finish()

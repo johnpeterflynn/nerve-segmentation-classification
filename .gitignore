@@ -1,2 +1,5 @@
 .polyaxon
 __pycache__
+/data/data_lidc.pickle
+logs/*
+outputs/*
