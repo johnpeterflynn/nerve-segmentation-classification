@@ -25,7 +25,9 @@ class TensorBoardLogger:
         if log_path is None:
             raise Exception("Logdir cannot be empty!")
 
-        current_exp_num = len(next(os.walk(log_path))[1])
+        os.makedirs(log_path, exist_ok=True)
+
+        current_exp_num = len(next(os.walk(log_path))[1])  # make directory if doesn't exist
         writer_dir = os.path.join(log_path, 'tb_log_exp{}/'.format(current_exp_num))
         self.tb_writer = SummaryWriter(logdir=writer_dir)
 
@@ -37,6 +39,7 @@ class TensorBoardLogger:
         if log_path is None:
             raise Exception("Logdir cannot be empty!")
 
+        os.makedirs(log_path, exist_ok=True)  # make directory if doesn't exist
         self.tb_writer = SummaryWriter(logdir=log_path)
 
     def _check_init_properly(self):
@@ -52,7 +55,7 @@ class TensorBoardLogger:
         for arg_name, arg_val in kwargs.items():
             self.tb_writer.add_scalar(arg_name, arg_val, epoch)
 
-        self.experiment.log_metrics(kwargs)
+        self.experiment.log_metrics(**kwargs)
 
     def finish(self):
         self._check_init_properly()

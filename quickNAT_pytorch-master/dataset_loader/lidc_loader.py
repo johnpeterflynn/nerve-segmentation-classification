@@ -30,12 +30,13 @@ def get_lidc_loaders(dataset_path='data/data_lidc.pickle',
                      batch_size_test=3,
                      train_indices=(0, 50),
                      val_indices=(60, 75),
-                     test_indices=(90, 100)):
+                     test_indices=(90, 100),
+                     num_graders=1):
     lidc_data = load_pickle_file(dataset_path)
 
-    train_dataset = LIDC_IDRI(lidc_data, False, train_indices[0], train_indices[1])
-    val_dataset = LIDC_IDRI(lidc_data, False, val_indices[0], val_indices[1])
-    test_dataset = LIDC_IDRI(lidc_data, False, test_indices[0], test_indices[1])
+    train_dataset = LIDC_IDRI(lidc_data, num_graders, train_indices[0], train_indices[1])
+    val_dataset = LIDC_IDRI(lidc_data, num_graders, val_indices[0], val_indices[1])
+    test_dataset = LIDC_IDRI(lidc_data, num_graders, test_indices[0], test_indices[1])
     del lidc_data
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=batch_size_train, shuffle=False)

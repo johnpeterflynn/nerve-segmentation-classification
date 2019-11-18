@@ -16,6 +16,7 @@ import losses as lo
 import argparse
 from util_functions.Logger import TensorBoardLogger
 from util_functions.RuntimeEnvironment import RuntimeEnvironment
+import util_functions.checkpoint_utils as ckp_utils
 
 
 #to assure reproducability/ take out randomness
@@ -152,6 +153,16 @@ parser.add_argument(
         '--runtime_env',
         default='local'     # local | colab | polyaxon
     )
+parser.add_argument(
+        '--num_graders',
+        type=int,
+        default=1
+    )
+parser.add_argument(
+        '--chekpoint_interval',
+        type=int,
+        default=20     # in epochs
+    )
 
 
 args = parser.parse_args()
@@ -181,6 +192,8 @@ val_index_start = args.val_index_start
 val_index_end = args.val_index_end
 test_index_start = args.test_index_start
 test_index_end = args.test_index_end
+num_graders = args.num_graders
+chekpoint_interval = args.chekpoint_interval
 
 if args.runtime_env == 'local':
     runtime_env = RuntimeEnvironment.LOCAL
@@ -403,6 +416,15 @@ def train_model(model, dataload_train, dataload_val, optimizer, num_epochs, tb_l
                     print('dice score_training per epoch: ', dice_metric_per_ep)
                     tb_logger.log_metrics(epoch, train_loss=ep_lo_tr, train_dice=dice_metric_per_ep)
 
+                if epoch > 0 and epoch % chekpoint_interval == 0:
+                    checkpoint = {
+                        'epoch': epoch,
+                        'state_dict': model.state_dict(),
+                        'optimizer': optimizer.state_dict()
+                    }
+                    ckp_utils.save_ckp(checkpoint, results_path, False, results_path)
+
+
     print('*** FINAL dice score_val_best value *** ', best_metric_value)
     print('*** FINAL train loss *** ', ep_lo_tr)
     print('*** FINAL val loss*** ', ep_lo_va)
@@ -495,7 +517,7 @@ def test(dataload_test, model_path, results_path):
 
 
 tb_logger = TensorBoardLogger(experiment)
-tb_logger.init_with_ascending_naming('logs')
+tb_logger.init_with_ascending_naming(os.path.join(results_path, 'logs'))
 
 
 # =============================================================================
@@ -522,7 +544,7 @@ if opt == 'Adam':
 # training
 # =============================================================================
 print(num_epochs)
-dataset_path = '/data/LIDC/data_lidc.pickle' if RuntimeEnvironment.POLYAXON else 'data/data_lidc.pickle'
+dataset_path = '/data/LIDC/data_lidc.pickle' if runtime_env is RuntimeEnvironment.POLYAXON else 'data/data_lidc.pickle'
 dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
     dataset_path=dataset_path,
     batch_size_train=batch_size_train,
@@ -530,10 +552,17 @@ dataload_train, dataload_val, dataload_test = ldl.get_lidc_loaders(
     batch_size_test=batch_size_test,
     train_indices=(train_index_start, train_index_end),
     val_indices=(val_index_start, val_index_end),
-    test_indices=(test_index_start, test_index_end)
+    test_indices=(test_index_start, test_index_end),
+    num_graders=num_graders
 )
 model = train_model(model, dataload_train, dataload_val, optimizer, num_epochs=num_epochs, tb_logger=tb_logger)
 
+checkpoint = {
+    'epoch': num_epochs,
+    'state_dict': model.state_dict(),
+    'optimizer': optimizer.state_dict()
+}
+ckp_utils.save_ckp(checkpoint, results_path, False, results_path)
 
 
 # =============================================================================

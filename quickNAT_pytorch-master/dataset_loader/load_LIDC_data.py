@@ -11,10 +11,10 @@ class LIDC_IDRI(Dataset):
     labels = []
     series_uid = []
     
-    enable_random_selection = True
+    num_graders = True
 
-    def __init__(self, data, enable_random_selection=True, start_index=-1, end_index=-1, transform=None):
-        self.enable_random_selection = enable_random_selection
+    def __init__(self, data, num_graders=1, start_index=-1, end_index=-1, transform=None):
+        self.num_graders = num_graders - 1
         self.transform = transform
 
         idx = 0
@@ -36,7 +36,7 @@ class LIDC_IDRI(Dataset):
         image = np.expand_dims(self.images[index], axis=0)
         
         #Randomly select one of the four labels for this image
-        selected_label_idx = random.randint(0,3) if self.enable_random_selection else 0
+        selected_label_idx = random.randint(0, self.num_graders)
         label = self.labels[index][selected_label_idx].astype(float)
         if self.transform is not None:
             image = self.transform(image)
