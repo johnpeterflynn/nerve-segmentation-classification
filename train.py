@@ -11,7 +11,6 @@ from trainer import Trainer
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
 import utils as util
 
-
 def main(config):
 
     logger = config.get_logger('train')
@@ -19,6 +18,21 @@ def main(config):
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
     valid_data_loader = data_loader.split_validation()
+
+    # If model evaluation is enabled
+    # then choose which way to select the testset
+    if config['eval']:
+        test_data_loader = data_loader.split_test()
+
+        if test_data_loader is None:
+            test_data_loader = getattr(module_data, config['data_loader']['type'])(
+                config['data_loader']['args']['data_dir'],
+                batch_size=1,
+                shuffle=False,
+                validation_split=0.0,
+                training=False,
+                num_workers=2
+            )
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
@@ -45,10 +59,13 @@ def main(config):
 
     trainer.train()
 
+    # TODO: Add model evaluation here.
+    # Design to be discussed. 
+    if config['eval']:
+        pass
 
 
-
-if __name__ == '__main__':
+def static_arguments():
     args = argparse.ArgumentParser(description='PyTorch Template')
     args.add_argument('-c', '--config', default=None, type=str,
                       help='config file path (default: None)')
@@ -63,26 +80,37 @@ if __name__ == '__main__':
                       choices=list(util.RuntimeEnvironment),
                       action=util.EnvironmentAction
                       )
-    
-    # custom cli options to modify configuration from default values given in json file.
-    CustomArgs = util.namedtuple_with_defaults('CustomArgs', 'flags type target action', (None, ) *4 )
+    args.add_argument('-s', '--seed', default=None, type=int,
+                      help='Seed to enable reproducibility')
+
+    args.add_argument('--eval', action="store_true",
+                      help='Evaluate the model after training using testset')
+    return args
+
+
+def dynamic_arguments():
+    """
+     custom cli options to modify configuration from default values 
+     given in json file.
+     """
+
+    CustomArgs = util.namedtuple_with_defaults(
+        'CustomArgs', 'flags type target action', (None, ) * 4)
     options = [
         CustomArgs(['--lr', '--learning_rate'],
                    type=float, target='optimizer;args;lr'),
         CustomArgs(['--bs', '--batch_size'], type=int,
                    target='data_loader;args;batch_size'),
-        CustomArgs(['-s', '--seed'], type=str, target=''),
         CustomArgs(['--save_dir'], type=str, target='trainer;save_dir'),
-        CustomArgs(['--data_dir'], type=str, target='data_loader;args;data_dir'),
+        CustomArgs(['--data_dir'], type=str,
+                   target='data_loader;args;data_dir'),
     ]
-    config = ConfigParser.from_args(args, options)
+    return options
 
-    if config['seed'] != "None":
-        # fix random seeds for reproducibility
-        SEED = 123
-        torch.manual_seed(SEED)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-        np.random.seed(SEED)
+
+if __name__ == '__main__':
+    args = static_arguments()
+    options = dynamic_arguments()
+    config = ConfigParser.from_args(args, options)
 
     main(config)

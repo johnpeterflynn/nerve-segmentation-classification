@@ -19,12 +19,11 @@ class LidcDataLoader(BaseDataLoader):
     LIDC data loader
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, training=True):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None):
 
         self.data_dir = data_dir
         self.dataset = LIDC_IDRI(self.data_dir)
-
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, test_config=test_config)
 
 
 class LIDC_IDRI(Dataset):

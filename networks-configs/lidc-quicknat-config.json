@@ -28,7 +28,11 @@
             "batch_size": 5,
             "shuffle": true,
             "validation_split": 0.1,
-            "num_workers": 2
+            "num_workers": 2,
+            "test_config": {
+                "test_split": 0.05,
+                "batch_size": 1
+            }
         }
     },
     "optimizer": {
