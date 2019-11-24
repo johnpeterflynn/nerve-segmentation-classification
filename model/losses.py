@@ -103,7 +103,7 @@ class IoULoss(_WeightedLoss):
 
     def forward(self, output, target, weights=None, ignore_index=None):
         """Forward pass
-        
+
         :param output: shape = NxCxHxW
         :type output: torch.tensor [FloatTensor]
         :param target: shape = NxHxW

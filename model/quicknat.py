@@ -4,8 +4,9 @@ import torch
 import torch.nn as nn
 from nn_common_modules import modules as sm
 from squeeze_and_excitation import squeeze_and_excitation as se
+from base import BaseModel
 
-class QuickNat(nn.Module):
+class QuickNat(BaseModel):
     """
     A PyTorch implementation of QuickNAT
 

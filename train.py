@@ -35,7 +35,8 @@ def main(config):
     lr_scheduler = config.init_obj(
         'lr_scheduler', torch.optim.lr_scheduler, optimizer)
 
-
+    experiment = Experiment()
+    experiment.set_name(config['name'])
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
                       data_loader=data_loader,
@@ -71,8 +72,8 @@ if __name__ == '__main__':
         CustomArgs(['--bs', '--batch_size'], type=int,
                    target='data_loader;args;batch_size'),
         CustomArgs(['-s', '--seed'], type=str, target=''),
-        CustomArgs(['--save_dir'],
-            target='trainer;save_dir'),
+        CustomArgs(['--save_dir'], type=str, target='trainer;save_dir'),
+        CustomArgs(['--data_dir'], type=str, target='data_loader;args;data_dir'),
     ]
     config = ConfigParser.from_args(args, options)
 

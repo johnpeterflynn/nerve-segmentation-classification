@@ -14,3 +14,6 @@ var
 ./data/*
 ./logs/*
 ./outputs/*
+tmp
+save
+./saved/*

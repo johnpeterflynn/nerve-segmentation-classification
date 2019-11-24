@@ -1,0 +1,63 @@
+---
+version: 1
+
+kind: experiment
+
+framework: pytorch
+
+tags: [examples]
+
+build:
+  image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
+  build_steps:
+    - pip install -r requirements.txt
+    #- pip install tensorboardX
+  env_vars:
+    - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
+
+environment:
+  resources:
+    cpu:
+      requests: 3
+      limits: 8
+    memory:
+      requests: 5000
+      limits: 10000
+    gpu:
+      requests: 1
+      limits: 1
+
+params:  
+  num_channels: 1
+  num_filters: 64
+  kernel_h: 1
+  kernel_w: 1
+  kernel_c: 1
+  stride_conv: 1
+  pool: 2
+  stride_pool : 2
+  num_class: 2
+  se_block: False
+  drop_out: 0.2
+  lr: 0.0001
+  model_name: QuickNat
+  num_epochs: 500
+  opt: Adam
+  loss_function: dice
+  batch_size_train: 20
+  batch_size_val: 10
+  batch_size_test: 10
+  train_index_start: 0
+  train_index_end: 13000
+  val_index_start: 13010
+  val_index_end: 14000
+  test_index_start: 14010
+  test_index_end: 14500
+  runtime_env: polyaxon
+  num_graders: 4
+  chekpoint_interval: 50
+  conf_file: networks-configs/lidc-quicknat-config.json
+  data_dir: /data/LIDC/
+
+run:
+  cmd: python3 -u train.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}

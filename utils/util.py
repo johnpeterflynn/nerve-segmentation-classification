@@ -7,7 +7,7 @@ from itertools import repeat
 import collections
 from enum import Enum
 from argparse import Action
-from polyaxon_client.tracking import get_outputs_path, Experiment
+from polyaxon_client.tracking import get_outputs_path, Experiment, get_data_paths
 
 
 class RuntimeEnvironment(Enum):
@@ -104,3 +104,11 @@ class EnvironmentAction(Action):
         if value == RuntimeEnvironment.POLYAXON:
             save_dir = get_outputs_path()
             setattr(namespace, "save_dir", save_dir)
+
+            # TODO: We can do this programmaticlly
+            # But we need to agree upon a certain format
+            # for now, just pass it as an argument through
+            # cli
+            #data_dir = get_data_paths()
+            #setattr(namespace, "data_dir", data_dir['data1'])
+
