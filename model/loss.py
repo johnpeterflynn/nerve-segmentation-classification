@@ -21,3 +21,11 @@ def crossentropy_plu_loss(output, target):
 
 def combined_plus(output, target):
     raise Exception("Hey that's not implemented!")
+
+def cross_entropy_loss_2d(output, target):
+    criterion = additional_losses.CrossEntropyLoss2d()
+    return criterion(output.double().cpu(), target.long().cpu())
+
+def combined_loss(output, target):
+    criterion = additional_losses.CombinedLoss()
+    return criterion(output, target.long())
