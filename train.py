@@ -3,11 +3,12 @@ import collections
 import torch
 import numpy as np
 import data_loaders as module_data
+import trainer as trainers_module
 import model.loss as module_loss
 import model.metric as module_metric
 import model as module_arch
 from parse_config import ConfigParser
-from trainer import Trainer
+from trainer import Trainer, ProbabilisticTrainer
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
 import utils as util
 
@@ -51,12 +52,19 @@ def main(config):
 
     experiment = Experiment()
     experiment.set_name(config['name'])
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      data_loader=data_loader,
-                      valid_data_loader=valid_data_loader,
-                      lr_scheduler=lr_scheduler)
 
+
+    if 'type' in config['trainer'].keys():
+        trainer_name = config['trainer']['type']
+    else:
+        trainer_name = "Trainer"
+
+    trainer = getattr(trainers_module, trainer_name)
+    trainer = trainer(model, criterion, metrics, optimizer,
+                    config=config,
+                    data_loader=data_loader,
+                    valid_data_loader=valid_data_loader,
+                        lr_scheduler=lr_scheduler)
     trainer.train()
 
     # TODO: Add model evaluation here.
