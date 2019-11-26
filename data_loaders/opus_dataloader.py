@@ -19,7 +19,7 @@ batch_size = 1
 num_workers = 3
 p = 0.5  # augmentation probability
 
-print('p: ', p)
+#print('p: ', p)
 
 # =============================================================================
 # dataloader, augmentation, batch

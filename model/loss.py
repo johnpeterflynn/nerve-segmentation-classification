@@ -26,6 +26,7 @@ def cross_entropy_loss_2d(output, target):
     criterion = additional_losses.CrossEntropyLoss2d()
     return criterion(output.double().cpu(), target.long().cpu())
 
-def combined_loss(output, target):
+def combined_loss(output, target, weights=None):
     criterion = additional_losses.CombinedLoss()
-    return criterion(output, target.long())
+    return criterion(output, target.long(), weights)
+
