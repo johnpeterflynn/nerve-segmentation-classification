@@ -111,4 +111,3 @@ class EnvironmentAction(Action):
             # cli
             #data_dir = get_data_paths()
             #setattr(namespace, "data_dir", data_dir['data1'])
-

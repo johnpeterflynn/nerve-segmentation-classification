@@ -1,0 +1,30 @@
+---
+version: 1
+
+kind: experiment
+
+framework: pytorch
+
+tags: [experiment resume]
+
+build:
+  image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
+  build_steps:
+    - pip install -r requirements.txt
+  env_vars:
+    - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
+
+environment:
+  resources:
+    cpu:
+      requests: 3
+      limits: 8
+    memory:
+      requests: 5000
+      limits: 10000
+    gpu:
+      requests: 1
+      limits: 1
+  
+run:
+  cmd: python3 -u train.py -r polyaxon -e polyaxon

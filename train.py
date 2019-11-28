@@ -12,6 +12,7 @@ from trainer import Trainer, ProbabilisticTrainer
 from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_path
 import utils as util
 
+
 def main(config):
 
     logger = config.get_logger('train')
@@ -19,21 +20,6 @@ def main(config):
     # setup data_loader instances
     data_loader = config.init_obj('data_loader', module_data)
     valid_data_loader = data_loader.split_validation()
-
-    # If model evaluation is enabled
-    # then choose which way to select the testset
-    if config['eval']:
-        test_data_loader = data_loader.split_test()
-
-        if test_data_loader is None:
-            test_data_loader = getattr(module_data, config['data_loader']['type'])(
-                config['data_loader']['args']['data_dir'],
-                batch_size=1,
-                shuffle=False,
-                validation_split=0.0,
-                training=False,
-                num_workers=2
-            )
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
@@ -53,7 +39,6 @@ def main(config):
     experiment = Experiment()
     experiment.set_name(config['name'])
 
-
     if 'type' in config['trainer'].keys():
         trainer_name = config['trainer']['type']
     else:
@@ -61,19 +46,19 @@ def main(config):
 
     trainer = getattr(trainers_module, trainer_name)
     trainer = trainer(model, criterion, metrics, optimizer,
-                    config=config,
-                    data_loader=data_loader,
-                    valid_data_loader=valid_data_loader,
-                        lr_scheduler=lr_scheduler)
+                      config=config,
+                      data_loader=data_loader,
+                      valid_data_loader=valid_data_loader,
+                      lr_scheduler=lr_scheduler)
     trainer.train()
-
-    # TODO: Add model evaluation here.
-    # Design to be discussed. 
-    if config['eval']:
-        pass
 
 
 def static_arguments():
+    """
+        Arguments which are not related to the json file
+        Where spicifc logic need to be performed for configuration
+        purposes for example
+    """
     args = argparse.ArgumentParser(description='PyTorch Template')
     args.add_argument('-c', '--config', default=None, type=str,
                       help='config file path (default: None)')
@@ -90,9 +75,6 @@ def static_arguments():
                       )
     args.add_argument('-s', '--seed', default=None, type=int,
                       help='Seed to enable reproducibility')
-
-    args.add_argument('--eval', action="store_true",
-                      help='Evaluate the model after training using testset')
     return args
 
 
