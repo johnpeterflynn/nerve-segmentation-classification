@@ -60,4 +60,4 @@ params:
   data_dir: /data/LIDC/
 
 run:
-  cmd: python3 -u train.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}

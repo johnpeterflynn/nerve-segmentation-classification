@@ -27,4 +27,4 @@ environment:
       limits: 1
   
 run:
-  cmd: python3 -u train.py -r polyaxon -e polyaxon
+  cmd: python3 -u runners/generic_runner.py -r polyaxon -e polyaxon

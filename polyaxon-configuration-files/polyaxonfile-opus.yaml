@@ -60,4 +60,4 @@ params:
   data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
 
 run:
-  cmd: python3 -u train.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}
