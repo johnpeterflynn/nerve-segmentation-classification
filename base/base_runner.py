@@ -115,7 +115,8 @@ class BaseRunner:
                           config=config,
                           data_loader=data_loader,
                           valid_data_loader=valid_data_loader,
-                          lr_scheduler=lr_scheduler)
+                          lr_scheduler=lr_scheduler, 
+                          experiment=experiment)
         trainer.train()
 
     def run(self):
