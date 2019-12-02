@@ -12,6 +12,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import torch
 from utils import load_pickle_file
+import _pickle as cPickle
+import gc
 
 
 class LidcDataLoader(BaseDataLoader):
@@ -19,39 +21,53 @@ class LidcDataLoader(BaseDataLoader):
     LIDC data loader
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None,
+                 sampling_mode="random"):
 
         self.data_dir = data_dir
-        self.dataset = LIDC_IDRI(self.data_dir)
+        self.dataset = LIDC_IDRI(self.data_dir, sampling_mode=sampling_mode)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, test_config=test_config)
+
+    def set_random_sampling_mode(self):
+        self.dataset.set_random_sampling_mode()
+
+    def set_no_sampling_mode(self):
+        self.dataset.set_no_sampling_mode()
 
 
 class LIDC_IDRI(Dataset):
     images = []
     labels = []
-    #series_uid = []
+    sampling_mode = None
 
-    def __init__(self, dataset_location, transform=None):
+    def __init__(self, dataset_location, transform=None, sampling_mode="random"):
         self.transform = transform
-        max_bytes = 2**31 - 1
+        self.sampling_mode = sampling_mode
         data = {}
         for file in os.listdir(dataset_location):
             filename = os.fsdecode(file)
             if '.pickle' in filename:
                 print("Loading file", filename)
                 file_path = dataset_location + filename
-                bytes_in = bytearray(0)
-                input_size = os.path.getsize(file_path)
-                with open(file_path, 'rb') as f_in:
-                    for _ in range(0, input_size, max_bytes):
-                        bytes_in += f_in.read(max_bytes)
-                new_data = pickle.loads(bytes_in)
-                data.update(new_data)
 
+                with open(file_path, 'rb') as f_in:
+                    # disable garbage collector
+                    gc.disable()
+
+                    data = cPickle.load(f_in)
+                    # enable garbage collector
+                    gc.enable()
+
+        i = 0
+        N = 10  # len(data.items())
+        self.images = [None] * N
+        self.labels = [None] * N
         for key, value in data.items():
-            self.images.append(value['image'].astype(float))
-            self.labels.append(value['masks'])
-            #self.series_uid.append(value['series_uid'])
+            if i >= N:
+                continue
+            self.images[i] = value['image'].astype(float)
+            self.labels[i] = value['masks']
+            i += 1
 
         assert (len(self.images) == len(self.labels)) #== len(self.series_uid))
 
@@ -60,29 +76,38 @@ class LIDC_IDRI(Dataset):
         for label in self.labels:
             assert np.max(label) <= 1 and np.min(label) >= 0
 
-        del new_data
         del data
 
     def __getitem__(self, index):
         image = np.expand_dims(self.images[index], axis=0)
+        image = torch.from_numpy(image).float()
 
         # Randomly select one of the four labels for this image
-        label = self.labels[index][random.randint(0, 3)].astype(float)
-        if self.transform is not None:
-            image = self.transform(image)
+        if self.sampling_mode == 'random':
+            label = self.labels[index][random.randint(0, 3)].astype(float)
 
-        #series_uid = self.series_uid[index]
+            if self.transform is not None:
+                image = self.transform(image)
 
-        # Convert image and label to torch tensors
-        image = torch.from_numpy(image)
-        label = torch.from_numpy(label)
+            label = torch.from_numpy(label).float()
+            return image, label
 
-        # Convert uint8 to float tensors
-        image = image.type(torch.FloatTensor)
-        label = label.type(torch.FloatTensor)
+        elif self.sampling_mode == 'no_sampling':
+            labels = self.labels[index]
 
-        return image, label #, series_uid
+            if self.transform is not None:
+                labels = [self.transform(label) for label in labels]
+
+            labels = torch.tensor(labels).float()
+
+            return image, labels
 
     # Override to give PyTorch size of dataset
     def __len__(self):
         return len(self.images)
+
+    def set_random_sampling_mode(self):
+        self.sampling_mode = 'random'
+
+    def set_no_sampling_mode(self):
+        self.sampling_mode = 'no_sampling'

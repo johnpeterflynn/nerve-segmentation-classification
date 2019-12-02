@@ -3,3 +3,4 @@ __pycache__
 /data/data_lidc.pickle
 logs/*
 outputs/*
+.idea/

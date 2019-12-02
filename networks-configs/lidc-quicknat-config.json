@@ -24,7 +24,7 @@
     "data_loader": {
         "type": "LidcDataLoader",
         "args":{
-            "data_dir": "/home/maml/datasets/",
+            "data_dir": "/Users/faridyagubbayli/Desktop/Courses/opus_nervesegmentation/data/",
             "batch_size": 5,
             "shuffle": true,
             "validation_split": 0.1,
@@ -45,8 +45,9 @@
     },
     "loss": "dice",
     "metrics": [
-        "dice_score"
+        "ged", "dice_agreement_in_samples", "iou_samples_per_label"
     ],
+    "metrics_sample_count": 5,
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -55,10 +56,11 @@
         }
     },
     "trainer": {
-        "epochs": 1,
+        "type": "QuicknatTrainer",
+        "epochs": 20,
 
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 50,
         "verbosity": 2,
         
         "monitor": "min val_loss",
