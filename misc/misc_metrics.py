@@ -89,11 +89,13 @@ if __name__ == '__main__':
     for i in range(BATCH_SIZE):
         # Unsqueeze to have 1 as batch size
         gts = torch.stack([random.choice(binary_images) for _ in range(NUM_GT)]).unsqueeze(dim=0)
-        #samples = torch.stack([random.choice(binary_images) for _ in range(NUM_S)]).unsqueeze(dim=0)
+        samples = torch.stack([random.choice(binary_images) for _ in range(NUM_S)]).unsqueeze(dim=0)
 
+        '''
         img = torch.zeros((1, 128, 128))
         img[0, 40:50, 60:70] = 1
         samples = torch.stack([img, img, img]).unsqueeze(dim=0)
+        '''
 
         calculated_metrics.append(calculate_metrics(samples, gts))
 

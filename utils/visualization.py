@@ -54,7 +54,7 @@ def make_image_metric_grid(imgTensor: torch.Tensor,
     v_data[1, :, ...] = bgColor[1] / 255
     v_data[2, :, ...] = bgColor[0] / 255
 
-    textFont = ImageFont.truetype("misc/arial.ttf", 24)
+    textFont = ImageFont.truetype("resources/arial.ttf", 24)
 
     if titles_enabled:
         v_data[:, 0:H_TITLES, :] = torch.ones((3, H_TITLES, final_W))

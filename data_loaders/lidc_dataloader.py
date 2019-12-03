@@ -22,10 +22,10 @@ class LidcDataLoader(BaseDataLoader):
     """
 
     def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None,
-                 sampling_mode="random"):
+                 sampling_mode="random", use_percentage=None):
 
         self.data_dir = data_dir
-        self.dataset = LIDC_IDRI(self.data_dir, sampling_mode=sampling_mode)
+        self.dataset = LIDC_IDRI(self.data_dir, sampling_mode=sampling_mode, use_percentage=use_percentage)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, test_config=test_config)
 
     def set_random_sampling_mode(self):
@@ -40,7 +40,7 @@ class LIDC_IDRI(Dataset):
     labels = []
     sampling_mode = None
 
-    def __init__(self, dataset_location, transform=None, sampling_mode="random"):
+    def __init__(self, dataset_location, transform=None, sampling_mode="random", use_percentage=None):
         self.transform = transform
         self.sampling_mode = sampling_mode
         data = {}
@@ -59,17 +59,22 @@ class LIDC_IDRI(Dataset):
                     gc.enable()
 
         i = 0
-        N = 10  # len(data.items())
-        self.images = [None] * N
-        self.labels = [None] * N
+        n = len(data.items())
+        if use_percentage is not None:
+            assert 0 < use_percentage <= 1
+            n = int(use_percentage * n)
+
+        print("Using LIDC-IDRI dataset with size: ", n)
+        self.images = [None] * n
+        self.labels = [None] * n
         for key, value in data.items():
-            if i >= N:
-                continue
+            if i >= n:
+                break
             self.images[i] = value['image'].astype(float)
             self.labels[i] = value['masks']
             i += 1
 
-        assert (len(self.images) == len(self.labels)) #== len(self.series_uid))
+        assert (len(self.images) == len(self.labels))
 
         for img in self.images:
             assert np.max(img) <= 1 and np.min(img) >= 0
@@ -85,6 +90,7 @@ class LIDC_IDRI(Dataset):
         # Randomly select one of the four labels for this image
         if self.sampling_mode == 'random':
             label = self.labels[index][random.randint(0, 3)].astype(float)
+            #label = self.labels[index][0].astype(float)
 
             if self.transform is not None:
                 image = self.transform(image)

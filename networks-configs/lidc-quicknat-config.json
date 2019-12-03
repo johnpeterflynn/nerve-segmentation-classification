@@ -24,15 +24,16 @@
     "data_loader": {
         "type": "LidcDataLoader",
         "args":{
-            "data_dir": "/Users/faridyagubbayli/Desktop/Courses/opus_nervesegmentation/data/",
-            "batch_size": 5,
+            "data_dir": "/home/farid/Probabilistic-Unet/data/",
+            "batch_size": 10,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
             "test_config": {
                 "test_split": 0.05,
                 "batch_size": 1
-            }
+            },
+            "use_percentage": 0.01
         }
     },
     "optimizer": {
@@ -45,9 +46,8 @@
     },
     "loss": "dice",
     "metrics": [
-        "ged", "dice_agreement_in_samples", "iou_samples_per_label"
+        "ged", "dice_agreement_in_samples", "iou_samples_per_label", "variance_ncc_samples"
     ],
-    "metrics_sample_count": 5,
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -57,7 +57,7 @@
     },
     "trainer": {
         "type": "QuicknatTrainer",
-        "epochs": 20,
+        "epochs": 200,
 
         "save_dir": "saved/",
         "save_period": 50,
@@ -66,6 +66,8 @@
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true
+        "tensorboard": true,
+
+        "metrics_sample_count": 5
     }
 }

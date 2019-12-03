@@ -26,9 +26,9 @@ class QuicknatTrainer(BaseTrainer):
         self.lr_scheduler = lr_scheduler
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
-        self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
-        self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
-        self.metrics_sample_count = config['metrics_sample_count']
+        self.train_metrics = MetricTracker('loss', writer=self.writer)
+        self.valid_metrics = MetricTracker(*[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.metrics_sample_count = config['trainer']['metrics_sample_count']
 
     def _train_epoch(self, epoch):
         """
@@ -38,6 +38,7 @@ class QuicknatTrainer(BaseTrainer):
         :return: A log that contains average loss and metric in this epoch.
         """
         self.model.train()
+        self.model.disable_test_dropout()
         self.train_metrics.reset()
         self.data_loader.set_random_sampling_mode()
         for batch_idx, (data, target) in enumerate(self.data_loader):
@@ -52,15 +53,11 @@ class QuicknatTrainer(BaseTrainer):
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
 
-            if batch_idx % self.log_step == 0 and False:
-                for met in self.metric_ftns:
-                    self.train_metrics.update(met.__name__, met(output, target))
-
+            if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
                     epoch,
                     self._progress(batch_idx),
                     loss.item()))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -82,38 +79,23 @@ class QuicknatTrainer(BaseTrainer):
         :return: A log that contains information about validation
         """
         self.model.eval()
+        self.model.enable_test_dropout()
         self.valid_metrics.reset()
         self.valid_data_loader.dataset.set_no_sampling_mode()
-
 
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(self.valid_data_loader):
                 data, targets = data.to(self.device), targets.to(self.device)
                 targets = targets.unsqueeze(2)
 
-                #output = self.model(data)
-                # loss = self.criterion(output, target)
-
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
-                # self.valid_metrics.update('loss', loss.item())
 
                 samples = self._sample(self.model, data)    # [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
-                samples = samples[:, :, 1:, ...]     # only class 1
 
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(samples, targets))
 
-            # Visualization - Only for the last batch
-            gt_titles = [f'GT_{i}' for i in range(targets.shape[0])]
-            s_titles = [f'S_{i}' for i in range(self.metrics_sample_count)]
-            # metric_titles = ['GED', 'DICE_S', 'IoU_S', 'VNCC_S']
-            titles = gt_titles + s_titles  # + metric_titles
-
-            vis_data = torch.cat((targets, samples), dim=1)
-            img_metric_grid = visualization.make_image_metric_grid(vis_data,
-                                                                   enable_helper_dots=True,
-                                                                   titles=titles)
-            self.writer.add_image(f'segmentations', img_metric_grid.cpu())
+                self._visualize_batch(batch_idx, samples, targets)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -123,16 +105,14 @@ class QuicknatTrainer(BaseTrainer):
     def _sample(self, model, data):
         num_samples = self.metrics_sample_count
 
-        # TODO dynamic num_channels
-        batch_size, num_channels, image_size = data.shape[0], 2, tuple(data.shape[2:])
-        samples = torch.zeros((batch_size, num_samples, num_channels, *image_size))
+        batch_size, num_channels, image_size = data.shape[0], 1, tuple(data.shape[2:])
+        samples = torch.zeros((batch_size, num_samples, num_channels, *image_size)).to(self.device)
         for i in range(num_samples):
-            samples[:, i, ...] = model(data)
+            output = model(data)
 
-            max_val, idx = torch.max(samples[:, i, ...], 1)
-            idx = idx.data.cpu().numpy()
-            sample = np.squeeze(idx)
-            samples[:, i, ...] = torch.from_numpy(sample)
+            max_val, idx = torch.max(output, 1)
+            sample = idx.unsqueeze(dim=1)
+            samples[:, i, ...] = sample
 
         return samples
 
@@ -145,3 +125,15 @@ class QuicknatTrainer(BaseTrainer):
             current = batch_idx
             total = self.len_epoch
         return base.format(current, total, 100.0 * current / total)
+
+    def _visualize_batch(self, batch_idx, samples, targets):
+        gt_titles = [f'GT_{i}' for i in range(targets.shape[1])]
+        s_titles = [f'S_{i}' for i in range(self.metrics_sample_count)]
+        titles = gt_titles + s_titles
+
+        vis_data = torch.cat((targets, samples), dim=1)
+        img_metric_grid = visualization.make_image_metric_grid(vis_data,
+                                                               enable_helper_dots=True,
+                                                               titles=titles)
+
+        self.writer.add_image(f'segmentations_batch_idx_{batch_idx}', img_metric_grid.cpu())

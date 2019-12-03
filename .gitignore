@@ -4,3 +4,4 @@ __pycache__
 logs/*
 outputs/*
 .idea/
+saved/

@@ -3,6 +3,8 @@ from model.loss import dice as dice_loss
 import numpy as np
 from itertools import combinations
 
+_device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 def accuracy(output, target):
     with torch.no_grad():
         pred = torch.argmax(output, dim=1)
@@ -130,12 +132,12 @@ def iou_samples_per_label(samples, _=None):
     n = samples.shape[1]
     num_labels = samples.shape[2]
 
-    dice_per_label = torch.zeros((batch_size, num_labels)).float()
+    dice_per_label = torch.zeros((batch_size, num_labels)).float().to(_device)
 
     for b in range(batch_size):
         # Size of intersection and union is [NUM_CHANNELS x H x W]
-        intersection = torch.ones(samples.shape[2:]).long()
-        union = torch.zeros(samples.shape[2:]).long()
+        intersection = torch.ones(samples.shape[2:]).long().to(_device)
+        union = torch.zeros(samples.shape[2:]).long().to(_device)
 
         # Intersection and union over all samples
         for i in range(n):
@@ -161,11 +163,11 @@ def pixel_wise_ce_samples(samples):
     :return: Tensor of shape [H x W]
     """
     samples = samples.float()
-    N = samples.size()[0]
+    N = samples.shape[0]
 
     mean_samples = samples.mean(0)
 
-    gamma_maps = torch.zeros((N, samples.size()[2], samples.size()[3]), dtype=torch.float)
+    gamma_maps = torch.zeros((N, samples.shape[2], samples.shape[3]), dtype=torch.float).to(_device)
     for i in range(N):
         gamma_maps[i, ...] += _pixel_wise_xent(samples[i, ...], mean_samples)
     gamma_map = gamma_maps.mean(0)
@@ -190,17 +192,17 @@ def variance_ncc_samples(samples, g_truths):
     N = samples.shape[1]
     M = g_truths.shape[1]
 
-    batch_nccs = torch.zeros(batch_size).float()
+    batch_nccs = torch.zeros(batch_size).float().to(_device)
     for b in range(batch_size):
-        samples = samples[b, ...].float()
-        g_truths = g_truths[b, ...].float()
+        batch_samples = samples[b, ...].float()
+        batch_g_truths = g_truths[b, ...].float()
 
-        gamma_map_ss = pixel_wise_ce_samples(samples)
+        gamma_map_ss = pixel_wise_ce_samples(batch_samples)
 
-        E_sy_arr = torch.zeros((M, N, samples.size()[2], samples.size()[3]))
+        E_sy_arr = torch.zeros((M, N, batch_samples.size()[2], batch_samples.size()[3]))
         for j in range(M):
             for i in range(N):
-                E_sy_arr[j, i, ...] = _pixel_wise_xent(samples[i, ...], g_truths[j, ...])
+                E_sy_arr[j, i, ...] = _pixel_wise_xent(batch_samples[i, ...], batch_g_truths[j, ...])
 
         E_sy = E_sy_arr.mean(dim=1)
 
@@ -213,7 +215,7 @@ def variance_ncc_samples(samples, g_truths):
     return torch.mean(batch_nccs)
 
 
-def _ged_dist_func(inp1, inp2):
+def _ged_dist_func(inp1: torch.Tensor, inp2: torch.Tensor):
     inp1 = inp1.float()
     inp2 = inp2.float()
 
