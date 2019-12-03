@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
-from utils.probquicknat import l2_regularisation
+from utils import l2_regularisation
 
 
 class ProbabilisticTrainer(BaseTrainer):

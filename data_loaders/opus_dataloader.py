@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from skimage import transform
 import os
-from utilz import load_files, norm, elastic_deformation
+from utils import norm, elastic_deformation, load_files
 import numpy as np
 import torch
 import random
@@ -13,20 +13,13 @@ from torch.utils.data import DataLoader
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_3'
 
-
-input_size = 400
-batch_size = 1
-num_workers = 3
-p = 0.5  # augmentation probability
-
-#print('p: ', p)
-
 # =============================================================================
 # dataloader, augmentation, batch
 # class for custom dataset
 # read paths in __init__, actually load files in __getitem__
 # patient_001 - patient_012
 # =============================================================================
+
 
 
 class OPUSDataset(Dataset):
@@ -271,32 +264,6 @@ class ToTensor(object):
                 'labels': torch.from_numpy(labels)}
 
 
-# =============================================================================
-# instantiate custom dataset, load data, apply transforms,
-# =============================================================================
-""" transformed_dataset_train = OPUSDataset('train', transform=transforms.Compose([
-    elastic_deform(p),
-    Rescale(input_size),
-    ToTensor()]))
-
-
-transformed_dataset_val = OPUSDataset('val', transform=transforms.Compose([
-    Rescale(input_size),
-    ToTensor()]))
-
-transformed_dataset_test = OPUSDataset('test', transform=transforms.Compose([
-    Rescale(input_size),
-    ToTensor()
-]))
-
-
-dataload_train = torch.utils.data.DataLoader(
-    transformed_dataset_train, batch_size=batch_size, num_workers=num_workers, shuffle=True)
-dataload_val = torch.utils.data.DataLoader(
-    transformed_dataset_val, batch_size=batch_size, num_workers=num_workers, shuffle=True)
-dataload_test = torch.utils.data.DataLoader(
-    transformed_dataset_test, num_workers=num_workers)
- """
 
 
 class OPUSDataLoader(BaseDataLoader):
