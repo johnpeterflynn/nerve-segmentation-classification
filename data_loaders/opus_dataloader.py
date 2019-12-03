@@ -1,13 +1,14 @@
-from torch.utils.data import Dataset
-from torchvision import transforms
-from skimage import transform
 import os
-from utils import norm, elastic_deformation, load_files
+import random
+
 import numpy as np
 import torch
-import random
+from skimage import transform
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from base import BaseDataLoader
-from torch.utils.data import DataLoader
+from utils import elastic_deformation, load_files, norm
 
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_1'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
@@ -19,7 +20,6 @@ from torch.utils.data import DataLoader
 # read paths in __init__, actually load files in __getitem__
 # patient_001 - patient_012
 # =============================================================================
-
 
 
 class OPUSDataset(Dataset):
@@ -264,8 +264,6 @@ class ToTensor(object):
                 'labels': torch.from_numpy(labels)}
 
 
-
-
 class OPUSDataLoader(BaseDataLoader):
     """
     OPUS data loader
@@ -301,7 +299,7 @@ class OPUSDataLoader(BaseDataLoader):
     def split_validation(self):
         transformed_dataset_val = OPUSDataset('val', self.data_dir,
                                               transform=transforms.Compose([
-                                                  Rescale(input_size),
+                                                  Rescale(self.input_size),
                                                   ToTensor()]))
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
