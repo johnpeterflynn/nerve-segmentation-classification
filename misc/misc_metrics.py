@@ -105,11 +105,11 @@ if __name__ == '__main__':
     gt_titles = [f'GT_{i}' for i in range(NUM_GT)]
     s_titles = [f'S_{i}' for i in range(NUM_S)]
     metric_titles = ['GED', 'DICE_S', 'IoU_S', 'VNCC_S']
-    titles = gt_titles + s_titles + metric_titles
+    titles = gt_titles + s_titles #+ metric_titles
 
     result_images = torch.cat(result_images)
     img_metric_grid = visualization.make_image_metric_grid(result_images,
-                                                           textList=calculated_metrics,
+                                                           #textList=calculated_metrics,
                                                            titles=titles,
                                                            enable_helper_dots=True)
     visualization.visualize_image_grid(img_metric_grid)

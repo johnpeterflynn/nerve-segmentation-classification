@@ -121,7 +121,7 @@ def dice_agreement_in_samples(samples, _=None):
 
 def iou_samples_per_label(samples, _=None):
     """
-        Intersection over Union between label and samples, Type 3 Uncertainty Measurement from Bayesian QuickNAT paper
+        Intersection over Union between samples, Type 3 Uncertainty Measurement from Bayesian QuickNAT paper
 
         Bayesian QuickNAT paper [page 4-5]: https://arxiv.org/pdf/1811.09800.pdf
 
