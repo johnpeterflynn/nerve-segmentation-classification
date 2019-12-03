@@ -50,3 +50,7 @@ where "s" is a sample, "s-bar" is a mean sample and  "y" is ground truth images.
 "CE" stands for Cross-Entropy.
 
 [source] PhiSeg paper [page 6]: https://arxiv.org/pdf/1906.04045.pdf
+
+An example metrics result can be found below:
+
+![](./pictures/samples.png)
