@@ -45,6 +45,7 @@ Average Normalized Cross Correlation between "Pixel-wise Cross Entropy of Sample
 and "Pixel-wise Cross Entropy between Samples & Annotators".
 
 ![](./pictures/variance_ncc.png)
+
 where "s" is a sample, "s-bar" is a mean sample and  "y" is ground truth images.
 "CE" stands for Cross-Entropy.
 
