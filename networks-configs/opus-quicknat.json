@@ -7,14 +7,14 @@
         "args": {
             "params":
                 {
-                "num_channels":1,
+                "num_channels":7,
                 "num_filters":64,
-                "kernel_h":5,
-                "kernel_w":5,
+                "kernel_h":3,
+                "kernel_w":3,
                 "stride_conv":1,
                 "pool":2,
                 "stride_pool":2,
-                "num_class":2,
+                "num_class":3,
                 "se_block": "CSSE",
                 "drop_out": 0.2,
                 "kernel_c": 1
@@ -25,7 +25,7 @@
         "type": "OPUSDataLoader",
         "args":{
             "data_dir": "/home/maml/datasets/OPUS_data_3",
-            "batch_size": 5,
+            "batch_size": 2,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
@@ -36,7 +36,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.001,
+            "lr": 0.00002,
             "weight_decay": 0,
             "amsgrad": true
         }
