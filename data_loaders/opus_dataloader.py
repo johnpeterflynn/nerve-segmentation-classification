@@ -175,7 +175,9 @@ class OPUSDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        return sample
+        # TODO: Modify framework to accept sample tuple
+        return sample['image'], sample['labels']
+        #return sample
 
 
 # =============================================================================
