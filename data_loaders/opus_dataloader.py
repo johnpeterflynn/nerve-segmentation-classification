@@ -129,7 +129,9 @@ class OPUSDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        # TODO: Modify framework to accept sample tuple
+        # TODO: Need to break apart dictionary and squeeze data so that it fits into the framework. Modify framework to
+        #  accept sample tuple
+        sample['labels'] = sample['labels'].squeeze()
         return sample['image'].float(), sample['labels'].float()
         #return sample
 
