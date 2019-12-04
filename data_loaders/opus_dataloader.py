@@ -176,7 +176,7 @@ class OPUSDataset(Dataset):
             sample = self.transform(sample)
 
         # TODO: Modify framework to accept sample tuple
-        return sample['image'], sample['labels']
+        return sample['image'].float(), sample['labels'].float()
         #return sample
 
 
