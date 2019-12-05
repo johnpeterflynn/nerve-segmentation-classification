@@ -59,4 +59,4 @@ params:
   conf_file: networks-configs/mnist-config.json
 
 run:
-  cmd: python3 -u train.py -c {{conf_file}} -e polyaxon
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon

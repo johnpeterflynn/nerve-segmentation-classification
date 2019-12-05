@@ -3,7 +3,7 @@ import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
-from utils.probquicknat import l2_regularisation
+from utils import l2_regularisation
 
 
 class ProbabilisticTrainer(BaseTrainer):
@@ -12,8 +12,8 @@ class ProbabilisticTrainer(BaseTrainer):
     """
 
     def __init__(self, model, criterion, metric_ftns, optimizer, config, data_loader,
-                 valid_data_loader=None, lr_scheduler=None, len_epoch=None):
-        super().__init__(model, criterion, metric_ftns, optimizer, config)
+                 valid_data_loader=None, lr_scheduler=None, len_epoch=None, experiment=None):
+        super().__init__(model, criterion, metric_ftns, optimizer, config, experiment)
         self.config = config
         self.data_loader = data_loader
         if len_epoch is None:

@@ -1,11 +1,12 @@
 import importlib
 from datetime import datetime
-
+from polyaxon_client.tracking import Experiment
 
 class TensorboardWriter():
-    def __init__(self, log_dir, logger, enabled):
+    def __init__(self, log_dir, logger, enabled, experiment: Experiment):
         self.writer = None
         self.selected_module = ""
+        self.experiment = experiment
 
         if enabled:
             log_dir = str(log_dir)
@@ -44,7 +45,9 @@ class TensorboardWriter():
             self.timer = datetime.now()
         else:
             duration = datetime.now() - self.timer
-            self.add_scalar('steps_per_sec', 1 / duration.total_seconds())
+            steps_per_sec = 1 / duration.total_seconds()
+            self.add_scalar('steps_per_sec', steps_per_sec)
+            self.experiment.log_metrics(steps_per_sec=steps_per_sec)
             self.timer = datetime.now()
 
     def __getattr__(self, name):

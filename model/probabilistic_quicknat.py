@@ -1,13 +1,15 @@
 # This code is based on: https://github.com/SimonKohl/probabilistic_unet
 
-import torch.nn as nn
-import torch
 import numpy as np
-from utils.probquicknat import init_weights, init_weights_orthogonal_normal, l2_regularisation
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
-from torch.distributions import Normal, Independent, kl
-from model.quicknat import QuickNat
+from torch.distributions import Independent, Normal, kl
+
 from base import BaseModel
+from model.quicknat import QuickNat
+from utils import (init_weights, init_weights_orthogonal_normal,
+                   l2_regularisation)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

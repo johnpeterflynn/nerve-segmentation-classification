@@ -7,10 +7,13 @@ from functools import reduce, partial
 from operator import getitem
 from datetime import datetime
 from logger import setup_logging
-from utils import read_json, write_json
+from utils import read_json, write_json, get_polyaxon_resume_file
 
 
 class ConfigParser:
+    models_dir_name = 'models'
+    logs_dir_name = 'logs'
+
     def __init__(self, config, resume=None, modification=None, run_id=None):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
@@ -30,8 +33,8 @@ class ConfigParser:
         exper_name = self.config['name']
         if run_id is None:  # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
-        self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = save_dir / 'logs' / exper_name / run_id
+        self._save_dir = save_dir / self.models_dir_name / exper_name / run_id
+        self._log_dir = save_dir / self.logs_dir_name / exper_name / run_id
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ''
@@ -72,7 +75,10 @@ class ConfigParser:
             np.random.seed(seed)
 
         if args.resume is not None:
-            resume = Path(args.resume)
+            if args.resume == "polyaxon":
+                resume = get_polyaxon_resume_file(cls.models_dir_name)
+            else:
+                resume = Path(args.resume)
             cfg_fname = resume.parent / 'config.json'
         else:
             msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
@@ -89,11 +95,6 @@ class ConfigParser:
         modification = {opt.target: getattr(
             args, _get_opt_name(opt.flags)) for opt in options}
 
-        # TODO: this is dirty - fix later
-        # modifying the structure of the json should be discourged
-        modification['eval'] = False
-        if args.eval:
-            modification['eval'] = True
         return cls(config, resume, modification)
 
     def init_obj(self, name, module, *args, **kwargs):

@@ -1,25 +1,18 @@
-from torch.utils.data import Dataset
-from torchvision import transforms
-from skimage import transform
 import os
-from utilz import load_files, norm, elastic_deformation
+import random
+
 import numpy as np
 import torch
-import random
+from skimage import transform
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
 from base import BaseDataLoader
-from torch.utils.data import DataLoader
+from utils import elastic_deformation, load_files, norm
 
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_1'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_3'
-
-
-input_size = 400
-batch_size = 1
-num_workers = 3
-p = 0.5  # augmentation probability
-
-#print('p: ', p)
 
 # =============================================================================
 # dataloader, augmentation, batch
@@ -271,34 +264,6 @@ class ToTensor(object):
                 'labels': torch.from_numpy(labels)}
 
 
-# =============================================================================
-# instantiate custom dataset, load data, apply transforms,
-# =============================================================================
-""" transformed_dataset_train = OPUSDataset('train', transform=transforms.Compose([
-    elastic_deform(p),
-    Rescale(input_size),
-    ToTensor()]))
-
-
-transformed_dataset_val = OPUSDataset('val', transform=transforms.Compose([
-    Rescale(input_size),
-    ToTensor()]))
-
-transformed_dataset_test = OPUSDataset('test', transform=transforms.Compose([
-    Rescale(input_size),
-    ToTensor()
-]))
-
-
-dataload_train = torch.utils.data.DataLoader(
-    transformed_dataset_train, batch_size=batch_size, num_workers=num_workers, shuffle=True)
-dataload_val = torch.utils.data.DataLoader(
-    transformed_dataset_val, batch_size=batch_size, num_workers=num_workers, shuffle=True)
-dataload_test = torch.utils.data.DataLoader(
-    transformed_dataset_test, num_workers=num_workers)
- """
-
-
 class OPUSDataLoader(BaseDataLoader):
     """
     OPUS data loader
@@ -334,7 +299,7 @@ class OPUSDataLoader(BaseDataLoader):
     def split_validation(self):
         transformed_dataset_val = OPUSDataset('val', self.data_dir,
                                               transform=transforms.Compose([
-                                                  Rescale(input_size),
+                                                  Rescale(self.input_size),
                                                   ToTensor()]))
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
