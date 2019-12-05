@@ -69,7 +69,7 @@ def ged(samples, targets):
 
         geds[b] = first_term - second_term - third_term
 
-    return geds.mean()
+    return geds.mean().cpu().item()
 
 
 def dice_agreement_in_samples(samples, _=None):
@@ -116,7 +116,7 @@ def dice_agreement_in_samples(samples, _=None):
 
         dice_per_label[b, :] /= num_pairs
 
-    return dice_per_label.mean()
+    return dice_per_label.mean().cpu().item()
 
 
 def iou_samples_per_label(samples, _=None):
@@ -149,7 +149,7 @@ def iou_samples_per_label(samples, _=None):
 
         dice_per_label[b, ...] = (sum_intersection.float() + 1e-6) / (sum_union.float() + 1e-6)
 
-    return dice_per_label.mean()
+    return dice_per_label.mean().cpu().item()
 
 
 def pixel_wise_ce_samples(samples):
@@ -212,7 +212,7 @@ def variance_ncc_samples(samples, g_truths):
 
         batch_nccs[b] = nccs.mean()
 
-    return torch.mean(batch_nccs)
+    return torch.mean(batch_nccs).cpu().item()
 
 
 def _ged_dist_func(inp1: torch.Tensor, inp2: torch.Tensor):

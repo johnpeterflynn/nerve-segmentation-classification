@@ -11,6 +11,7 @@ class BaseTrainer:
     def __init__(self, model, criterion, metric_ftns, optimizer, config, experiment):
         self.config = config
         self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        self.experiment = experiment
 
         # setup GPU device if available, move model into configured device
         self.device, device_ids = self._prepare_device(config['n_gpu'])
@@ -68,6 +69,8 @@ class BaseTrainer:
             # save logged informations into log dict
             log = {'epoch': epoch}
             log.update(result)
+
+            self.experiment.log_metrics(**log)
 
             # print logged informations to the screen
             for key, value in log.items():
