@@ -25,7 +25,7 @@
         "type": "OPUSDataLoader",
         "args":{
             "data_dir": "/home/maml/datasets/OPUS_data_3",
-            "batch_size": 2,
+            "batch_size": 1,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
@@ -36,7 +36,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.00002,
+            "lr": 0.0005,
             "weight_decay": 0,
             "amsgrad": true
         }
@@ -53,14 +53,14 @@
         }
     },
     "trainer": {
-        "epochs": 10,
+        "epochs": 200,
 
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 100,
         "verbosity": 2,
         
         "monitor": "min val_loss",
-        "early_stop": 10,
+        "early_stop": 50,
 
         "tensorboard": true
     }
