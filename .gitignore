@@ -7,3 +7,4 @@ saved/*
 *.pyc
 data/*
 .vscode/*
+.idea/

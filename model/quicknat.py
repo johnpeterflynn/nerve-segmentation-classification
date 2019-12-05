@@ -74,6 +74,17 @@ class QuickNat(BaseModel):
             encode_block.drop_out = encode_block.drop_out.apply(nn.Module.train)
             decode_block.drop_out = decode_block.drop_out.apply(nn.Module.train)
 
+    def disable_test_dropout(self):
+        """
+        Disables train time drop out for uncertainity
+        :return:
+        """
+        attr_dict = self.__dict__['_modules']
+        for i in range(1, 5):
+            encode_block, decode_block = attr_dict['encode' + str(i)], attr_dict['decode' + str(i)]
+            encode_block.drop_out = encode_block.drop_out.apply(nn.Module.eval)
+            decode_block.drop_out = decode_block.drop_out.apply(nn.Module.eval)
+
     @property
     def is_cuda(self):
         """

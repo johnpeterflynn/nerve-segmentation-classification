@@ -24,28 +24,29 @@
     "data_loader": {
         "type": "LidcDataLoader",
         "args":{
-            "data_dir": "/home/maml/datasets/",
-            "batch_size": 5,
+            "data_dir": "/home/farid/Probabilistic-Unet/data/",
+            "batch_size": 10,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
             "test_config": {
                 "test_split": 0.05,
                 "batch_size": 1
-            }
+            },
+            "use_percentage": 0.1
         }
     },
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.001,
+            "lr": 0.00001,
             "weight_decay": 0,
             "amsgrad": true
         }
     },
     "loss": "dice",
     "metrics": [
-        "dice_score"
+        "ged", "dice_agreement_in_samples", "iou_samples_per_label", "variance_ncc_samples"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -55,15 +56,18 @@
         }
     },
     "trainer": {
-        "epochs": 1,
+        "type": "QuicknatLIDCTrainer",
+        "epochs": 510,
 
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 50,
         "verbosity": 2,
         
         "monitor": "min val_loss",
         "early_stop": 10,
 
-        "tensorboard": true
+        "tensorboard": true,
+
+        "metrics_sample_count": 5
     }
 }
