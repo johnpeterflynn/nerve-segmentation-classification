@@ -21,11 +21,10 @@ class LidcDataLoader(BaseDataLoader):
     LIDC data loader
     """
 
-    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None,
-                 sampling_mode="random", use_percentage=None):
+    def __init__(self, data_dir, batch_size, shuffle=True, validation_split=0.0, num_workers=1, test_config=None, use_percentage=None):
 
         self.data_dir = data_dir
-        self.dataset = LIDC_IDRI(self.data_dir, sampling_mode=sampling_mode, use_percentage=use_percentage)
+        self.dataset = LIDC_IDRI(self.data_dir, use_percentage=use_percentage)
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers, test_config=test_config)
 
     def set_random_sampling_mode(self):
@@ -40,9 +39,8 @@ class LIDC_IDRI(Dataset):
     labels = []
     sampling_mode = None
 
-    def __init__(self, dataset_location, transform=None, sampling_mode="random", use_percentage=None):
+    def __init__(self, dataset_location, transform=None, use_percentage=None):
         self.transform = transform
-        self.sampling_mode = sampling_mode
         data = {}
         for file in os.listdir(dataset_location):
             filename = os.fsdecode(file)
@@ -58,7 +56,6 @@ class LIDC_IDRI(Dataset):
                     # enable garbage collector
                     gc.enable()
 
-        i = 0
         n = len(data.items())
         if use_percentage is not None:
             assert 0 < use_percentage <= 1
@@ -67,6 +64,7 @@ class LIDC_IDRI(Dataset):
         print("Using LIDC-IDRI dataset with size: ", n)
         self.images = [None] * n
         self.labels = [None] * n
+        i = 0
         for key, value in data.items():
             if i >= n:
                 break
@@ -87,33 +85,13 @@ class LIDC_IDRI(Dataset):
         image = np.expand_dims(self.images[index], axis=0)
         image = torch.from_numpy(image).float()
 
-        # Randomly select one of the four labels for this image
-        if self.sampling_mode == 'random':
-            label = self.labels[index][random.randint(0, 3)].astype(float)
-            #label = self.labels[index][0].astype(float)
+        if self.transform is not None:
+            image = self.transform(image)
 
-            if self.transform is not None:
-                image = self.transform(image)
+        labels = torch.tensor(self.labels[index]).float()
 
-            label = torch.from_numpy(label).float()
-            return image, label
-
-        elif self.sampling_mode == 'no_sampling':
-            labels = self.labels[index]
-
-            if self.transform is not None:
-                labels = [self.transform(label) for label in labels]
-
-            labels = torch.tensor(labels).float()
-
-            return image, labels
+        return image, labels
 
     # Override to give PyTorch size of dataset
     def __len__(self):
         return len(self.images)
-
-    def set_random_sampling_mode(self):
-        self.sampling_mode = 'random'
-
-    def set_no_sampling_mode(self):
-        self.sampling_mode = 'no_sampling'

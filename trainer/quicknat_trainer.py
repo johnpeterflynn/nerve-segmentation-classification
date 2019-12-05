@@ -27,7 +27,7 @@ class QuicknatTrainer(BaseTrainer):
         self.log_step = int(np.sqrt(data_loader.batch_size))
 
         self.train_metrics = MetricTracker('loss', writer=self.writer)
-        self.valid_metrics = MetricTracker(*[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.metrics_sample_count = config['trainer']['metrics_sample_count']
 
     def _train_epoch(self, epoch):
@@ -38,11 +38,14 @@ class QuicknatTrainer(BaseTrainer):
         :return: A log that contains average loss and metric in this epoch.
         """
         self.model.train()
-        self.model.disable_test_dropout()
+        self.model.enable_test_dropout()
         self.train_metrics.reset()
-        self.data_loader.set_random_sampling_mode()
         for batch_idx, (data, target) in enumerate(self.data_loader):
+            # shape data: [B x 1 x H x W]
+            # shape target: [B x 4 x H x W]
             data, target = data.to(self.device), target.to(self.device)
+            rand_idx = np.random.randint(0, 4)
+            target = target[:, rand_idx, ...]
 
             self.optimizer.zero_grad()
             output = self.model(data)
@@ -81,15 +84,22 @@ class QuicknatTrainer(BaseTrainer):
         self.model.eval()
         self.model.enable_test_dropout()
         self.valid_metrics.reset()
-        self.valid_data_loader.dataset.set_no_sampling_mode()
 
         with torch.no_grad():
             for batch_idx, (data, targets) in enumerate(self.valid_data_loader):
                 data, targets = data.to(self.device), targets.to(self.device)
+                rand_idx = np.random.randint(0, 4)
+                target = targets[:, rand_idx, ...]
                 targets = targets.unsqueeze(2)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
 
+                # Loss
+                output = self.model(data)
+                loss = self.criterion(output, target)
+                self.valid_metrics.update('loss', loss.item())
+
+                # Sampling
                 samples = self._sample(self.model, data)    # [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
 
                 for met in self.metric_ftns:
