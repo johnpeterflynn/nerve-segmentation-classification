@@ -28,34 +28,6 @@ environment:
       limits: 1
 
 params:  
-  num_channels: 7
-  num_filters: 64
-  kernel_h: 3
-  kernel_w: 3
-  kernel_c: 1
-  stride_conv: 1
-  pool: 2
-  stride_pool : 2
-  num_class: 3
-  se_block: False
-  drop_out: 0.2
-  lr: 0.00002
-  model_name: QuickNat
-  num_epochs: 500
-  opt: Adam
-  loss_function: dice
-  batch_size_train: 20 # outdated?
-  batch_size_val: 10 # outdated?
-  batch_size_test: 10 # outdated?
-  train_index_start: 0
-  train_index_end: 13000
-  val_index_start: 13010
-  val_index_end: 14000
-  test_index_start: 14010
-  test_index_end: 14500
-  runtime_env: polyaxon
-  num_graders: 4
-  chekpoint_interval: 50
   conf_file: networks-configs/opus-quicknat.json
   data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
 
