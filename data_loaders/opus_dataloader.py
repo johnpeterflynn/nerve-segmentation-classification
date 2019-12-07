@@ -1,5 +1,6 @@
 import os
 import random
+import re
 
 import numpy as np
 import torch
@@ -14,22 +15,24 @@ from utils import elastic_deformation, load_files, norm
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_3'
 
-NUM_CLASSES = 3
-CLASS_MEDIANUS = 'medianus'
-CLASS_ULNARIS = 'ulnaris'
-CLASS_RADIALIS = 'radialis'
+_NUM_CLASSES = 3
+_CLASS_MEDIANUS = 'medianus'
+_CLASS_ULNARIS = 'ulnaris'
+_CLASS_RADIALIS = 'radialis'
+
 
 def class_str_to_index(class_str):
-    if class_str == CLASS_MEDIANUS:
+    if class_str == _CLASS_MEDIANUS:
         out = 0
-    elif class_str == CLASS_RADIALIS:
+    elif class_str == _CLASS_RADIALIS:
         out = 1
-    elif class_str == CLASS_ULNARIS:
+    elif class_str == _CLASS_ULNARIS:
         out = 2
     else:
         out = -1
 
     return out
+
 
 # =============================================================================
 # dataloader, augmentation, batch
@@ -95,7 +98,11 @@ class OPUSDataset(Dataset):
 
     def _load_patient(self, data_path_patient):
         """Load patient data from path"""
-        for nerve_class in [CLASS_MEDIANUS, CLASS_ULNARIS, CLASS_RADIALIS]:
+
+        # regular expression for the image/label number in the filenames
+        img_re = r'(\w+)_((\d+)_(\d+))\.\w+'
+
+        for nerve_class in [_CLASS_MEDIANUS, _CLASS_ULNARIS, _CLASS_RADIALIS]:
 
             # OPUS data 2/3 contains 'OPUS' for image_list, 'ROI' for labels_list
             # NOTE: OPUS data additionally contains 'reconOA' for image_list, 'reconUS' for us_list
@@ -109,9 +116,12 @@ class OPUSDataset(Dataset):
                     self.classes_list.append(nerve_class)
 
             # Load label
-            for filename in os.listdir(roi_path):
-                if not filename.startswith(('.', '@')):
-                    self.labels_list.append(os.path.join(roi_path, filename))
+            label_files = os.listdir(roi_path)
+            for img_file in self.image_list:
+                file_tag = re.search(img_re, img_file).group(2)
+                for filename in label_files:
+                    if not filename.startswith(('.', '@')) and file_tag in filename:
+                        self.labels_list.append(os.path.join(roi_path, filename))
 
     def __len__(self):
         return len(self.labels_list)
