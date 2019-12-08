@@ -61,11 +61,6 @@ class OPUSDataset(Dataset):
         # =============================================================================
         if phase == 'train':
             # patients for training
-            # self.patients_list = ('patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_1
-            # self.patients_list = ('patient_002', 'patient_003', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_2
-            # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_3
-            # self.patients_list = ('patient_002','patient_003','patient_004', 'patient_005', 'patient_006', 'patient_007','patient_010', 'patient_011') # crossval_4
-            # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009') # crossval_5
             self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
                                   'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
 
@@ -74,10 +69,6 @@ class OPUSDataset(Dataset):
         # =============================================================================
         if phase == 'val':
             # patients for validation
-            # self.patients_list = ('patient_002','patient_003') # crossval_1
-            # self.patients_list = ('patient_004','patient_005') # crossval_2
-            # self.patients_list = ('patient_006','patient_007') # crossval_3
-            # self.patients_list = ('patient_008','patient_009') # crossval_4
             self.patients_list = ('patient_011',)  # crossval_5/ complete
 
         # =============================================================================
