@@ -44,7 +44,7 @@ def class_str_to_index(class_str):
 
 class OPUSDataset(Dataset):
 
-    def __init__(self, phase, data_path, transform=None):
+    def __init__(self, phase, data_path, transform=None, with_idx=False):
 
         self.transform = transform
         self.phase = phase
@@ -54,24 +54,26 @@ class OPUSDataset(Dataset):
         self.labels_list = list()
         self.classes_list = list()
         self.patients_list = list()
+        self.with_idx = with_idx
 
         # =============================================================================
         # TRAINING files
         # =============================================================================
         if phase == 'train':
-            ## patients for training
+            # patients for training
             # self.patients_list = ('patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_1
             # self.patients_list = ('patient_002', 'patient_003', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_2
             # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_3
             # self.patients_list = ('patient_002','patient_003','patient_004', 'patient_005', 'patient_006', 'patient_007','patient_010', 'patient_011') # crossval_4
             # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009') # crossval_5
-            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
+            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
+                                  'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
 
         # =============================================================================
         # VALIDATION files
         # =============================================================================
         if phase == 'val':
-            ### patients for validation
+            # patients for validation
             # self.patients_list = ('patient_002','patient_003') # crossval_1
             # self.patients_list = ('patient_004','patient_005') # crossval_2
             # self.patients_list = ('patient_006','patient_007') # crossval_3
@@ -82,7 +84,7 @@ class OPUSDataset(Dataset):
         # TESTING files
         # =============================================================================
         if phase == 'test':
-            ### patients for testing
+            # patients for testing
             self.patients_list = ('patient_012',)
 
         # Load patient data
@@ -91,7 +93,8 @@ class OPUSDataset(Dataset):
             self._load_patient(data_path_patient)
 
         # Sort all lists by image_list
-        sorted_data = sorted(zip(self.image_list, self.labels_list, self.classes_list))
+        sorted_data = sorted(
+            zip(self.image_list, self.labels_list, self.classes_list))
         self.image_list = [a for a, _, _ in sorted_data]
         self.labels_list = [b for _, b, _ in sorted_data]
         self.classes_list = [c for _, _, c in sorted_data]
@@ -110,16 +113,20 @@ class OPUSDataset(Dataset):
             label_files = os.listdir(roi_path)
             for img_filename in os.listdir(opus_path):
                 if not img_filename.startswith(('.', '@')):
-                    img_case_num, img_id = self._parse_sample_filename(img_filename)
+                    img_case_num, img_id = self._parse_sample_filename(
+                        img_filename)
                     if img_case_num is not None:
                         for label_filename in label_files:
-                            label_case_num, label_id = self._parse_sample_filename(label_filename)
+                            label_case_num, label_id = self._parse_sample_filename(
+                                label_filename)
 
                             # If the image and label files have the same case number and id
                             if img_case_num == label_case_num and img_id == label_id:
-                                self.image_list.append(os.path.join(opus_path, img_filename))
+                                self.image_list.append(
+                                    os.path.join(opus_path, img_filename))
                                 self.classes_list.append(nerve_class)
-                                self.labels_list.append(os.path.join(roi_path, label_filename))
+                                self.labels_list.append(
+                                    os.path.join(roi_path, label_filename))
                                 break
 
     def _parse_sample_filename(self, filename):
@@ -138,7 +145,6 @@ class OPUSDataset(Dataset):
             sample_id = None
 
         return case_num, sample_id
-
 
     def __len__(self):
         return len(self.labels_list)
@@ -159,8 +165,9 @@ class OPUSDataset(Dataset):
         # TODO: Need to break apart dictionary and squeeze data so that it fits into the framework. Modify framework to
         #  accept sample tuple
         sample['labels'] = sample['labels'].squeeze()
+        if self.with_idx:
+            return sample['image'].float(), sample['labels'].float(), idx
         return sample['image'].float(), sample['labels'].float()
-        #return sample
 
 
 # =============================================================================
@@ -262,18 +269,20 @@ class OPUSDataLoader(BaseDataLoader):
                  num_workers=1,
                  training=True,
                  input_size=400,
-                 augmentation_probability=0.5):
+                 augmentation_probability=0.5,
+                 with_idx=False):
 
         self.data_dir = data_dir
         self.input_size = input_size
         self.augmentation_probability = augmentation_probability
+        self.with_idx = with_idx
         if training:
-            self.dataset = OPUSDataset('train', data_path=data_dir, transform=transforms.Compose([
+            self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, transform=transforms.Compose([
                 elastic_deform(augmentation_probability),
                 Rescale(input_size),
                 ToTensor()]))
         else:
-            self.dataset = OPUSDataset('test', data_path=data_dir, transform=transforms.Compose([
+            self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, transform=transforms.Compose([
                 Rescale(input_size),
                 ToTensor()
             ]))
@@ -283,6 +292,7 @@ class OPUSDataLoader(BaseDataLoader):
 
     def split_validation(self):
         transformed_dataset_val = OPUSDataset('val', self.data_dir,
+                                              with_idx=self.with_idx,
                                               transform=transforms.Compose([
                                                   Rescale(self.input_size),
                                                   ToTensor()]))

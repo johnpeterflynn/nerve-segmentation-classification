@@ -29,7 +29,8 @@
             "validation_split": 0.1,
             "num_workers": 2,
             "input_size": 400,
-            "augmentation_probability": 0.5
+            "augmentation_probability": 0.5,
+            "with_idx": true
         }
     },
     "optimizer": {

@@ -39,7 +39,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+        for batch_idx, (data, target, _) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
@@ -83,15 +83,20 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
         self.model.eval()
         self.model.enable_test_dropout()
         self.valid_metrics.reset()
+        results_list = []
+        self.writer.set_step(epoch, 'valid')
+
+        #val_size, num_channels, image_size = len(self.valid_data_loader.dataset), 1, tuple(data.shape[2:])
+        #samples = torch.zeros((val_size, self.metrics_sample_count, num_channels, *image_size)).to(self.device)
 
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for (data, target, idxs) in self.valid_data_loader:
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
                 loss = self.criterion(output, target)
 
-                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
+                #self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 
                 samples = self._sample(self.model, data)    # [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
@@ -102,11 +107,18 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
                     else:
                         self.valid_metrics.update(met.__name__, met(data, target))
 
-                data_cpu = data.cpu()
-                #self._visualize_prediction(data_cpu, output.cpu(), target.cpu())
-                
-                self._visualize_batch(data_cpu, batch_idx, samples, target)
+                #self._visualize_batch(data, epoch, samples, target)
+                for idx in range(data.shape[0]):
+                    results_list.append((data[idx, ...], samples[idx, ...], target[idx, ...], idxs[idx]))
+        
+        # TODO: Very ugly fix later
+        results_list.sort(key=lambda tup: tup[3])
 
+        data = torch.cat([tup[0].unsqueeze(0) for tup in results_list])
+        samples = torch.cat([tup[1].unsqueeze(0) for tup in results_list])
+        target = torch.cat([tup[2].unsqueeze(0) for tup in results_list])
+
+        self._visualize_batch(data, epoch, samples, target)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -138,7 +150,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
         """
             inputs: [BATCH_SIZE x NUM_CHANNELS x H x W] #  NUM_CHANNELS = 7 for opus 
             samples: [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
-            targets: [BATCH_SIZE x NUM_CHANNELS x H x W]
+            targets: [BATCH_SIZE x  H x W]
         """
         gt_title = ['Input Image', 'GT Segmentation']
         s_titles = [f'S_{i}' for i in range(self.metrics_sample_count)]
@@ -157,7 +169,9 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
                                                                enable_helper_dots=True,
                                                                titles=titles)
 
-        self.writer.add_image(f'segmentations_batch_idx_{batch_idx}', img_metric_grid.cpu())
+        #self.writer.add_image(f'segmentations_batch_idx_{batch_idx}', img_metric_grid.cpu())
+        self.writer.add_image(f'segmentations_ouput', img_metric_grid.cpu())
+
 
 
     def _sample(self, model, data):
