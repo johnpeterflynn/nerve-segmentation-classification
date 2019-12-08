@@ -99,9 +99,6 @@ class OPUSDataset(Dataset):
     def _load_patient(self, data_path_patient):
         """Load patient data from path"""
 
-        # regular expression for the image/label number in the filenames
-        img_re = r'(\w+)_((\d+)_(\d+))\.\w+'
-
         for nerve_class in [_CLASS_MEDIANUS, _CLASS_ULNARIS, _CLASS_RADIALIS]:
 
             # OPUS data 2/3 contains 'OPUS' for image_list, 'ROI' for labels_list
@@ -110,18 +107,38 @@ class OPUSDataset(Dataset):
             roi_path = os.path.join(data_path_patient, nerve_class, 'ROI')
 
             # Load image and class
-            for filename in os.listdir(opus_path):
-                if not filename.startswith(('.', '@')):
-                    self.image_list.append(os.path.join(opus_path, filename))
-                    self.classes_list.append(nerve_class)
-
-            # Load label
             label_files = os.listdir(roi_path)
-            for img_file in self.image_list:
-                file_tag = re.search(img_re, img_file).group(2)
-                for filename in label_files:
-                    if not filename.startswith(('.', '@')) and file_tag in filename:
-                        self.labels_list.append(os.path.join(roi_path, filename))
+            for img_filename in os.listdir(opus_path):
+                if not img_filename.startswith(('.', '@')):
+                    img_case_num, img_id = self._parse_sample_filename(img_filename)
+                    if img_case_num is not None:
+                        for label_filename in label_files:
+                            label_case_num, label_id = self._parse_sample_filename(label_filename)
+
+                            # If the image and label files have the same case number and id
+                            if img_case_num == label_case_num and img_id == label_id:
+                                self.image_list.append(os.path.join(opus_path, img_filename))
+                                self.classes_list.append(nerve_class)
+                                self.labels_list.append(os.path.join(roi_path, label_filename))
+                                break
+
+    def _parse_sample_filename(self, filename):
+        # regular expression for the image/label number in the filenames
+        # Example: 'OPUS_NNMF_48_05.mat' where '48' is the case number (group 4) and '05' is the sample id (group 5) and
+        # group 2 is '_48_05.'
+        file_re = r'(\w+)(_((\d+)_(\d+))\.)\w+$'
+
+        matches = re.search(file_re, filename)
+
+        if matches is not None and matches.group(2) is not None:
+            case_num = int(matches.group(4))
+            sample_id = int(matches.group(5))
+        else:
+            case_num = None
+            sample_id = None
+
+        return case_num, sample_id
+
 
     def __len__(self):
         return len(self.labels_list)
