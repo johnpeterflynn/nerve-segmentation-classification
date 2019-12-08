@@ -16,7 +16,7 @@ import model.loss as module_loss
 import model.metric as module_metric
 from base import BaseRunner, CustomArgs
 from parse_config import ConfigParser
-
+from utils import build_segmentation_grid, save_grid
 
 class OpusTester(BaseRunner):
 
@@ -84,6 +84,7 @@ class OpusTester(BaseRunner):
 
         total_loss = 0.0
         total_metrics = torch.zeros(len(metric_fns))
+        results_list = []
 
         with torch.no_grad():
             for _, (data, target) in enumerate(tqdm(data_loader)):
@@ -103,6 +104,17 @@ class OpusTester(BaseRunner):
                                                    target) * batch_size
                     else:
                         total_metrics[i] += metric(output, target) * batch_size
+                for idx in range(data.shape[0]):
+                    results_list.append((data[idx, ...], samples[idx, ...], target[idx, ...]))
+
+        # TODO: Very ugly fix later - lazy to write something different 
+        data = torch.cat([tup[0].unsqueeze(0) for tup in results_list])
+        samples = torch.cat([tup[1].unsqueeze(0) for tup in results_list])
+        target = torch.cat([tup[2].unsqueeze(0) for tup in results_list])
+        grid = build_segmentation_grid(self.metrics_sample_count, target, data, samples)
+    
+        
+        save_grid(grid, config['trainer']['save_dir'])
 
         n_samples = len(data_loader.sampler)
         log = {'loss': total_loss / n_samples}

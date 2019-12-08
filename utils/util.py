@@ -16,6 +16,7 @@ import scipy.io
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from utils import visualization
 from polyaxon_client.tracking import (Experiment, get_data_paths,
                                       get_outputs_path)
 from scipy import interpolate as ipol
@@ -345,3 +346,38 @@ def load_files(filename):
 
     if filename.endswith('.png'):
         return misc.imread(filename)
+
+
+def build_segmentation_grid(metrics_sample_count, targets, inputs, samples):
+    """
+    TODO: Make more generic, currently it works only for binary segmentation
+        inputs: [BATCH_SIZE x NUM_CHANNELS x H x W] #  NUM_CHANNELS = 7 for opus 
+        samples: [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
+        targets: [BATCH_SIZE x  H x W]
+    """
+    gt_title = ['Input Image', 'GT Segmentation']
+    s_titles = [f'S_{i}' for i in range(metrics_sample_count)]
+    titles = gt_title + s_titles
+
+
+
+    # add num of channels dim - needed for the metric format
+    target = targets.unsqueeze(1).unsqueeze(1)
+    inputs = inputs[:, 0, :, :]  # pick one spectrum just to show image+labels
+    inputs = inputs.unsqueeze(1).unsqueeze(1)
+
+    overlayed_labels = torch.cat((inputs, target), dim=1)
+    vis_data = torch.cat((overlayed_labels, samples), dim=1)
+    img_metric_grid = visualization.make_image_metric_grid(vis_data,
+                                                            enable_helper_dots=True,
+                                                            titles=titles)
+    return img_metric_grid
+
+
+def save_grid(grid, save_dir):
+    grid = grid.permute(1, 2, 0)
+    plt.imshow(grid)
+    save_dir  = Path(save_dir) /'test-images/'
+    save_dir.mkdir(parents=True, exist_ok=True)
+    plt.axis("off")
+    plt.savefig( save_dir / "test-result.png")
