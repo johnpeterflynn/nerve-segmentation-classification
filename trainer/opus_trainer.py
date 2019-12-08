@@ -115,10 +115,10 @@ class OPUSTrainer(BaseTrainer):
 
     def _visualize_input(self, input):
         """format and display input data on tensorboard"""
-        self.writer.add_image('input', make_grid(input[:, 0, :, :], nrow=8, normalize=True))
+        self.writer.add_image('input', make_grid(input[0, 0, :, :], nrow=8, normalize=True))
 
     def _visualize_prediction(self, input, output, target):
         """format and display output and target data on tensorboard"""
-        output_binary = binary(output)[0, 1, :, :]
-        out_imposed = impose_labels_on_image(input, target, output_binary)
-        self.writer.add_image('output', make_grid(out_imposed, nrow=8, normalize=False))
+        out_b1 = binary(output)
+        out_b1 = impose_labels_on_image(input[0, 0, :, :], target[0, :, :], out_b1[0, 1, :, :])
+        self.writer.add_image('output', make_grid(out_b1, nrow=8, normalize=False))

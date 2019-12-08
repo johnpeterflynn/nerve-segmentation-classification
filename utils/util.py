@@ -292,10 +292,8 @@ def show_labels(image, labels, prediction, results_path, i):
 
 
 def impose_labels_on_image(image, labels, prediction):
-    _, a, b = np.where(labels != 0)
+    a, b = np.where(labels != 0)
     e, f = np.where(prediction != 0)
-    _, x, y, z = image.shape
-    image = image[0, 0, :, :]  # pick one spectrum just to show image+labels
 
     fig = plt.figure(figsize=(4, 4))
     plt.imshow(image, cmap='gray')
