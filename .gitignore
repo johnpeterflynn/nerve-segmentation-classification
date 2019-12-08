@@ -1,10 +1,14 @@
+.idea
 .polyaxon
 __pycache__
-/data/data_lidc.pickle
 logs/*
 outputs/*
 saved/*
 *.pyc
 data/*
 .vscode/*
+<<<<<<< HEAD
 .idea/
+=======
+data
+>>>>>>> john-opus-migration

@@ -1,5 +1,6 @@
 import os
 import random
+import re
 
 import numpy as np
 import torch
@@ -13,6 +14,25 @@ from utils import elastic_deformation, load_files, norm
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_1'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_2'
 #data_path = '/data/OPUS_nerve_segmentation/OPUS_data_3'
+
+_NUM_CLASSES = 3
+_CLASS_MEDIANUS = 'medianus'
+_CLASS_ULNARIS = 'ulnaris'
+_CLASS_RADIALIS = 'radialis'
+
+
+def class_str_to_index(class_str):
+    if class_str == _CLASS_MEDIANUS:
+        out = 0
+    elif class_str == _CLASS_RADIALIS:
+        out = 1
+    elif class_str == _CLASS_ULNARIS:
+        out = 2
+    else:
+        out = -1
+
+    return out
+
 
 # =============================================================================
 # dataloader, augmentation, batch
@@ -32,132 +52,76 @@ class OPUSDataset(Dataset):
         self.image_list = list()
         self.us_list = list()
         self.labels_list = list()
+        self.classes_list = list()
         self.patients_list = list()
 
+        # =============================================================================
+        # TRAINING files
+        # =============================================================================
         if phase == 'train':
-            # patients for training
-            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
-                                  'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
+            ## patients for training
+            # self.patients_list = ('patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_1
+            # self.patients_list = ('patient_002', 'patient_003', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_2
+            # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_008', 'patient_009', 'patient_010', 'patient_011') # crossval_3
+            # self.patients_list = ('patient_002','patient_003','patient_004', 'patient_005', 'patient_006', 'patient_007','patient_010', 'patient_011') # crossval_4
+            # self.patients_list = ('patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009') # crossval_5
+            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005', 'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
 
-            for x in self.patients_list:
-                data_path_patient = os.path.join(data_path, x)
-
-                # OPUS_data_2/3
-
-                # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'OPUS', filename))
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'ROI', filename))
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'ROI', filename))
-
-                # nervus ulnaris
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'OPUS', filename))
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'ROI', filename))
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'ROI', filename))
-
-                # nervus radialis
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'OPUS', filename))
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'ROI', filename))
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'ROI', filename))
-
-                self.image_list.sort()
-                self.us_list.sort()
-                self.labels_list.sort()
+        # =============================================================================
         # VALIDATION files
+        # =============================================================================
         if phase == 'val':
+            ### patients for validation
+            # self.patients_list = ('patient_002','patient_003') # crossval_1
+            # self.patients_list = ('patient_004','patient_005') # crossval_2
+            # self.patients_list = ('patient_006','patient_007') # crossval_3
+            # self.patients_list = ('patient_008','patient_009') # crossval_4
+            self.patients_list = ('patient_011',)  # crossval_5/ complete
 
-            # patients for validation
-            self.patients_list = ('patient_011', )  # crossval_5/ complete
-
-            for x in self.patients_list:
-                data_path_patient = os.path.join(data_path, x)
-
-                # OPUS_data_2/3
-
-                # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'ROI', filename))
-
-                # nervus ulnaris
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'ROI', filename))
-
-                # nervus radialis
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'ROI', filename))
-
-                self.image_list.sort()
-                self.us_list.sort()
-                self.labels_list.sort()
-
+        # =============================================================================
+        # TESTING files
+        # =============================================================================
         if phase == 'test':
+            ### patients for testing
+            self.patients_list = ('patient_012',)
 
-            # patients for testing
-            self.patients_list = ('patient_012', )
-            for x in self.patients_list:
-                data_path_patient = os.path.join(data_path, x)
+        # Load patient data
+        for x in self.patients_list:
+            data_path_patient = os.path.join(data_path, x)
+            self._load_patient(data_path_patient)
 
-                # OPUS_data_2/3
+        # Sort all lists by image_list
+        sorted_data = sorted(zip(self.image_list, self.labels_list, self.classes_list))
+        self.image_list = [a for a, _, _ in sorted_data]
+        self.labels_list = [b for _, b, _ in sorted_data]
+        self.classes_list = [c for _, _, c in sorted_data]
 
-                # nervus medianus
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'medianus', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'medianus', 'ROI', filename))
+    def _load_patient(self, data_path_patient):
+        """Load patient data from path"""
 
-                # nervus ulnaris
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'ulnaris', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'ulnaris', 'ROI', filename))
+        # regular expression for the image/label number in the filenames
+        img_re = r'(\w+)_((\d+)_(\d+))\.\w+'
 
-                # nervus radialis
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'OPUS')):
-                    self.image_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'OPUS', filename))
-                for filename in os.listdir(os.path.join(data_path_patient, 'radialis', 'ROI')):
-                    self.labels_list.append(os.path.join(
-                        data_path_patient, 'radialis', 'ROI', filename))
+        for nerve_class in [_CLASS_MEDIANUS, _CLASS_ULNARIS, _CLASS_RADIALIS]:
 
-                self.image_list.sort()
-                self.us_list.sort()
-                self.labels_list.sort()
+            # OPUS data 2/3 contains 'OPUS' for image_list, 'ROI' for labels_list
+            # NOTE: OPUS data additionally contains 'reconOA' for image_list, 'reconUS' for us_list
+            opus_path = os.path.join(data_path_patient, nerve_class, 'OPUS')
+            roi_path = os.path.join(data_path_patient, nerve_class, 'ROI')
+
+            # Load image and class
+            for filename in os.listdir(opus_path):
+                if not filename.startswith(('.', '@')):
+                    self.image_list.append(os.path.join(opus_path, filename))
+                    self.classes_list.append(nerve_class)
+
+            # Load label
+            label_files = os.listdir(roi_path)
+            for img_file in self.image_list:
+                file_tag = re.search(img_re, img_file).group(2)
+                for filename in label_files:
+                    if not filename.startswith(('.', '@')) and file_tag in filename:
+                        self.labels_list.append(os.path.join(roi_path, filename))
 
     def __len__(self):
         return len(self.labels_list)
@@ -175,7 +139,11 @@ class OPUSDataset(Dataset):
         if self.transform:
             sample = self.transform(sample)
 
-        return sample
+        # TODO: Need to break apart dictionary and squeeze data so that it fits into the framework. Modify framework to
+        #  accept sample tuple
+        sample['labels'] = sample['labels'].squeeze()
+        return sample['image'].float(), sample['labels'].float()
+        #return sample
 
 
 # =============================================================================

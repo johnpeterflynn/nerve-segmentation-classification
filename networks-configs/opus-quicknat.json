@@ -5,27 +5,26 @@
     "arch": {
         "type": "QuickNat",
         "args": {
-            "params":
-                {
-                "num_channels":1,
-                "num_filters":64,
-                "kernel_h":5,
-                "kernel_w":5,
-                "stride_conv":1,
-                "pool":2,
-                "stride_pool":2,
-                "num_class":2,
-                "se_block": "CSSE",
+            "params": {
+                "num_channels": 7,
+                "num_filters": 64,
+                "kernel_h": 5,
+                "kernel_w": 5,
+                "stride_conv": 1,
+                "pool": 2,
+                "stride_pool": 2,
+                "num_class": 2,
+                "se_block": "false",
                 "drop_out": 0.2,
                 "kernel_c": 1
-                }
+            }
         }
     },
     "data_loader": {
         "type": "OPUSDataLoader",
-        "args":{
-            "data_dir": "/home/maml/datasets/OPUS_data_3",
-            "batch_size": 5,
+        "args": {
+            "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
+            "batch_size": 1,
             "shuffle": true,
             "validation_split": 0.1,
             "num_workers": 2,
@@ -35,8 +34,8 @@
     },
     "optimizer": {
         "type": "Adam",
-        "args":{
-            "lr": 0.001,
+        "args": {
+            "lr": 0.0001,
             "weight_decay": 0,
             "amsgrad": true
         }
@@ -53,15 +52,13 @@
         }
     },
     "trainer": {
-        "epochs": 10,
-
+        "type": "OPUSTrainer",
+        "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 100,
         "verbosity": 2,
-        
         "monitor": "min val_loss",
-        "early_stop": 10,
-
+        "early_stop": 50,
         "tensorboard": true
     }
 }

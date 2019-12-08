@@ -288,6 +288,39 @@ def show_labels(image, labels, prediction, results_path, i):
         results_path, 'label plus pred' + str(i) + '.png'))
 
 
+def impose_labels_on_image(image, labels, prediction):
+    _, a, b = np.where(labels != 0)
+    e, f = np.where(prediction != 0)
+    _, x, y, z = image.shape
+    image = image[0, 0, :, :]  # pick one spectrum just to show image+labels
+
+    fig = plt.figure(figsize=(4, 4))
+    plt.imshow(image, cmap='gray')
+    aa = plt.scatter(b, a, s=1, marker='o', c='red', alpha=0.5)
+    #aa.set_label('label')
+    #plt.legend()
+    bb = plt.scatter(f, e, s=2, marker='o', c='blue', alpha=0.1)
+    #bb.set_label('prediction')
+    #plt.legend()
+    plt.axis('off')
+    plt.tight_layout(0)
+
+    fig.canvas.draw()
+
+    # Convert from figure to image
+    buf = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    buf = buf.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    plt.close(fig)
+
+    # Convert to pytorch tensor with format C x H x W
+    torch_buf = torch.from_numpy(buf)
+    torch_buf = torch_buf.permute(2, 0, 1)
+    torch_buf = torch_buf.unsqueeze(0)
+
+    return torch_buf
+
+
 def load_files(filename):
 
     if filename.endswith('.mat'):
