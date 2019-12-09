@@ -1,22 +1,11 @@
 {
-    "name": "QuickNat",
+    "name": "ResUltNet",
     "n_gpu": 1,
-    "seed": true,
+    "seed": "None",
     "arch": {
-        "type": "QuickNat",
+        "type": "ResUltNet",
         "args": {
             "params": {
-                "num_channels": 7,
-                "num_filters": 64,
-                "kernel_h": 5,
-                "kernel_w": 5,
-                "stride_conv": 1,
-                "pool": 2,
-                "stride_pool": 2,
-                "num_class": 2,
-                "se_block": "false",
-                "drop_out": 0.2,
-                "kernel_c": 1
             }
         }
     },
@@ -24,9 +13,9 @@
         "type": "OPUSDataLoader",
         "args": {
             "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
-            "batch_size": 2,
+            "batch_size": 8,
             "shuffle": true,
-            "validation_split": 0,
+            "validation_split": 0.1,
             "num_workers": 2,
             "input_size": 400,
             "augmentation_probability": 0.5
@@ -36,13 +25,13 @@
         "type": "Adam",
         "args": {
             "lr": 0.0001,
-            "weight_decay": 1e-3,
+            "weight_decay": 0,
             "amsgrad": true
         }
     },
-    "loss": "dice",
+    "loss": "crossentropy_plu_loss",
     "metrics": [
-        "dice_score"
+        "accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -52,7 +41,7 @@
         }
     },
     "trainer": {
-        "type": "OPUSTrainer",
+        "type": "ResNetTrainer",
         "epochs": 100,
         "save_dir": "saved/",
         "save_period": 10,
