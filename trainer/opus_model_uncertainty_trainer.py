@@ -31,7 +31,7 @@ class OPUSWithUncertaityTrainer(Trainer):
 
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target, _) in enumerate(self.data_loader):
+        for batch_idx, (data, target, _, _) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
@@ -81,7 +81,7 @@ class OPUSWithUncertaityTrainer(Trainer):
         results_list = []
 
         with torch.no_grad():
-            for batch_idx, (data, target, idxs) in enumerate(self.valid_data_loader):
+            for batch_idx, (data, target, _, idxs) in enumerate(self.valid_data_loader):
                 data, target = data.to(self.device), target.to(self.device)
 
                 output, samples = util.sample_and_compute_mean(self.model, data, self.val_mc_sample_count, 2, self.device)

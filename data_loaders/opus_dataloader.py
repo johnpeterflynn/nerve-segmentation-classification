@@ -151,7 +151,7 @@ class OPUSDataset(Dataset):
                             if img_case_num == label_case_num and img_id == label_id:
                                 self.image_list.append(
                                     os.path.join(opus_path, img_filename))
-                                self.classes_list.append(nerve_class)
+                                self.classes_list.append(class_str_to_index(nerve_class))
                                 self.labels_list.append(
                                     os.path.join(roi_path, label_filename))
                                 break
@@ -180,6 +180,8 @@ class OPUSDataset(Dataset):
 
         image = load_files(self.image_list[idx])
         labels = load_files(self.labels_list[idx])
+        cl = self.classes_list[idx]
+
 
         if labels.ndim < 3:
             labels = np.expand_dims(labels, axis=2)
@@ -193,8 +195,8 @@ class OPUSDataset(Dataset):
         #  accept sample tuple
         sample['labels'] = sample['labels'].squeeze()
         if self.with_idx:
-            return sample['image'].float(), sample['labels'].float(), idx
-        return sample['image'].float(), sample['labels'].float()
+            return sample['image'].float(), sample['labels'].float(), cl, idx
+        return sample['image'].float(), sample['labels'].float(), cl
 
 
 # =============================================================================
