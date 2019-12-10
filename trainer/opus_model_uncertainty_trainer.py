@@ -46,7 +46,9 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
             data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad()
-            output = self.model(data)
+            output, _ = self._mean_by_sampling(
+                self.model, data)  # self.model(data)
+
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
@@ -97,14 +99,17 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
+                output, samples = self._mean_by_sampling(
+                    self.model, data)  # self.model(data)
+
                 loss = self.criterion(output, target)
 
                 self.writer.set_step(
                     (epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
 
-                # [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
-                samples = self._sample(self.model, data)
+                # [BATCH_SIZE x SAMPLE_SIZE x 1 x H x W]
+                samples = self._binarize_samples(samples)
 
                 for met in self.metric_ftns:
                     if met.__name__ in ["ged", "dice_agreement_in_samples", "iou_samples_per_label", "variance_ncc_samples"]:
@@ -152,21 +157,21 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
         img_metric_grid = build_segmentation_grid(
             self.metrics_sample_count, targets, inputs, samples)
 
-        #self.writer.add_image(f'segmentations_batch_idx_{batch_idx}', img_metric_grid.cpu())
         self.writer.add_image(f'segmentations_ouput', img_metric_grid.cpu())
 
-    def _sample(self, model, data):
+    def _mean_by_sampling(self, model, data):
         num_samples = self.metrics_sample_count
 
-        batch_size, num_channels, image_size = data.shape[0], 1, tuple(
+        batch_size, num_channels, image_size = data.shape[0], 2, tuple(
             data.shape[2:])
         samples = torch.zeros(
             (batch_size, num_samples, num_channels, *image_size)).to(self.device)
         for i in range(num_samples):
-            output = model(data)
+            samples[:, i, ...] = model(data)
 
-            _, idx = torch.max(output, 1)
-            sample = idx.unsqueeze(dim=1)
-            samples[:, i, ...] = sample
+        return samples.mean(dim=1), samples
 
-        return samples
+    def _binarize_samples(self, samples):
+        _, idx = torch.max(samples, dim=2)
+        idx.unsqueeze_(dim=2)
+        return idx
