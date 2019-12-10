@@ -58,10 +58,10 @@
         "type": "OPUSWithUncertaityTrainer",
         "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 100,
+        "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 50,
+        "early_stop": 100,
         "tensorboard": true,
         "metrics_sample_count": 5
     }

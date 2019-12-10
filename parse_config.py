@@ -13,7 +13,8 @@ from utils import read_json, write_json, get_polyaxon_resume_file
 class ConfigParser:
     models_dir_name = 'models'
     logs_dir_name = 'logs'
-
+    msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
+    
     def __init__(self, config, resume=None, modification=None, run_id=None):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
@@ -80,16 +81,23 @@ class ConfigParser:
             else:
                 resume = Path(args.resume)
             cfg_fname = resume.parent / 'config.json'
+
+            if args.transfer_learning:
+                assert args.config is not None, cls.msg_no_cfg
+                cfg_fname = Path(args.config)
         else:
-            msg_no_cfg = "Configuration file need to be specified. Add '-c config.json', for example."
-            assert args.config is not None, msg_no_cfg
+            assert args.config is not None, cls.msg_no_cfg
             resume = None
             cfg_fname = Path(args.config)
 
         config = read_json(cfg_fname)
         if args.config and resume:
-            # update new config for fine-tuning
-            config.update(read_json(args.config))
+            # If we do tranfer learning then the resume path will only hold
+            # the pretrained model and we do not want to override 
+            # the config file. 
+            if args.transfer_learning is False:
+                # update new config for fine-tuning
+                config.update(read_json(args.config))
 
         # parse custom cli options into dictionary
         modification = {opt.target: getattr(
