@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torchvision.utils import make_grid
 from base import BaseTrainer
-from utils import inf_loop, MetricTracker, binary, impose_labels_on_image
+from utils import inf_loop, MetricTracker, binary, impose_labels_on_image, draw_confusion_matrix
 
 
 class ResNetTrainer(BaseTrainer):
@@ -29,6 +29,8 @@ class ResNetTrainer(BaseTrainer):
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
+        self.best_val_accuracy = 0
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -38,6 +40,7 @@ class ResNetTrainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
+        train_confusion_matrix = torch.zeros(3, 3, dtype=torch.long)
         for batch_idx, (data, _, target_class) in enumerate(self.data_loader):
             data, target_class = data.to(self.device), target_class.to(self.device)
 
@@ -60,8 +63,16 @@ class ResNetTrainer(BaseTrainer):
 
                 self._visualize_input(data.cpu())
 
+            p_cls = torch.argmax(output, dim=1)
+            for i, t_cl in enumerate(target_class):
+                train_confusion_matrix[p_cls[i], t_cl] += 1
+
             if batch_idx == self.len_epoch:
                 break
+
+        print('train confusion matrix:')
+        print(train_confusion_matrix)
+        self._visualize_prediction(train_confusion_matrix)
         log = self.train_metrics.result()
 
         if self.do_validation:
@@ -83,6 +94,7 @@ class ResNetTrainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
+            val_confusion_matrix = torch.zeros(3, 3, dtype=torch.long)
             for batch_idx, (data, _, target_class) in enumerate(self.valid_data_loader):
                 data, target_class = data.to(self.device), target_class.to(self.device)
 
@@ -98,10 +110,30 @@ class ResNetTrainer(BaseTrainer):
                 #prediction = torch.argmax(output)
                 #self.logger.debug('val class prediction, actual: {}, {}'.format(prediction, target_class))
 
+                p_cls = torch.argmax(output, dim=1)
+                for i, t_cl in enumerate(target_class):
+                    val_confusion_matrix[p_cls[i], t_cl] += 1
+
+            print('val confusion matrix:')
+            print(val_confusion_matrix)
+            self._visualize_prediction(val_confusion_matrix)
+
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
             self.writer.add_histogram(name, p, bins='auto')
-        return self.valid_metrics.result()
+
+        val_log = self.valid_metrics.result()
+
+        # TODO: Super hacky way to display best val dice score. Better way possible?
+        self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'best_valid')
+        val_scores = {k: v for k, v in val_log.items()}
+        current_val_accuracy = val_scores['accuracy']
+
+        if current_val_accuracy > self.best_val_accuracy:
+            self.best_val_accuracy = current_val_accuracy
+            self.valid_metrics.update('accuracy', self.best_val_accuracy)
+
+        return val_log
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'
@@ -117,9 +149,7 @@ class ResNetTrainer(BaseTrainer):
         """format and display input data on tensorboard"""
         self.writer.add_image('input', make_grid(input[0, 0, :, :], nrow=8, normalize=True))
 
-    def _visualize_prediction(self, input, output, target):
+    def _visualize_prediction(self, matrix):
         """format and display output and target data on tensorboard"""
-        print('Class predicted, actual: ', torch.argmax(output), ', ', target)
-        #out_b1 = binary(output)
-        #out_b1 = impose_labels_on_image(input[0, 0, :, :], target[0, :, :], out_b1[0, 1, :, :])
-        #self.writer.add_image('output', make_grid(out_b1, nrow=8, normalize=False))
+        out = draw_confusion_matrix(matrix)
+        self.writer.add_image('output', make_grid(out, nrow=8, normalize=False))

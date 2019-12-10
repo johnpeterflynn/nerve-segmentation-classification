@@ -322,6 +322,31 @@ def impose_labels_on_image(image, labels, prediction):
     return torch_buf
 
 
+def draw_confusion_matrix(matrix):
+    fig, axs = plt.subplots(1, 1)
+    rowlabel = ("Pred medianus", "Pred ulnaris", "Pred radialis")
+    collabel = ("Actual medianus", "Actual ulnaris", "Actual radialis")
+    axs.axis('tight')
+    axs.axis('off')
+    the_table = axs.table(cellText=matrix.numpy(), rowLabels=rowlabel, colLabels=collabel, loc='center', cellLoc='center')
+    the_table.set_fontsize(30)
+
+    fig.canvas.draw()
+
+    # Convert from figure to image
+    buf = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    buf = buf.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    plt.close(fig)
+
+    # Convert to pytorch tensor with format C x H x W
+    torch_buf = torch.from_numpy(buf)
+    torch_buf = torch_buf.permute(2, 0, 1)
+    torch_buf = torch_buf.unsqueeze(0)
+
+    return torch_buf
+
+
 def load_files(filename):
 
     if filename.endswith('.mat'):
