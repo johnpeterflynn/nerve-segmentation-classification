@@ -194,8 +194,8 @@ class OPUSDataset(Dataset):
         #  accept sample tuple
         sample['labels'] = sample['labels'].squeeze()
         if self.with_idx:
-            return sample['image'].float(), sample['labels'].float(), cl, idx
-        return sample['image'].float(), sample['labels'].float(), cl
+            return sample['image'][0:3, :, :].float(), sample['labels'].float(), cl, idx
+        return sample['image'][0:3, :, :].float(), sample['labels'].float(), cl
 
 
 # =============================================================================

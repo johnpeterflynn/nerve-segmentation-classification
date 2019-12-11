@@ -81,6 +81,10 @@ class ResUltNet(BaseModel):
 
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
+
+        #for param in self.parameters():
+        #    param.requires_grad = False
+
         self.fc = nn.Linear(25088 * block.expansion, num_classes) # 512
 
         for m in self.modules():
@@ -91,7 +95,7 @@ class ResUltNet(BaseModel):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-        self._load_pretrained_resnet()
+        #self._load_pretrained_resnet()
 
     def _load_pretrained_resnet(self):
         pretrained_dict = model_zoo.load_url(model_urls['resnet18'])
