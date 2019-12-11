@@ -62,7 +62,7 @@ class OPUSDataset(Dataset):
             self.use_fixed_dataset(phase)
         else:
             self.use_cross_validation(cross_val, phase)
-        
+
         # =============================================================================
         # TESTING files
         # =============================================================================
@@ -103,12 +103,12 @@ class OPUSDataset(Dataset):
         start_idx = valset_idx * fold_size
 
         # if it is the last fold
-        # then use rest of the data points 
-        if valset_idx == (n_fold - 1): 
+        # then use rest of the data points
+        if valset_idx == (n_fold - 1):
             end_idx = n_patients
         else:
             end_idx = fold_size*(valset_idx + 1)
-        
+
 
         if phase == 'train':
             train_idx = np.delete(idx_full, np.arange(start_idx, end_idx))
@@ -120,7 +120,7 @@ class OPUSDataset(Dataset):
         if phase == 'train':
             # patients for training
             self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
-                                  'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_006') 
+                                  'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_006')
 
         if phase == 'val':
             # patients for validation
@@ -181,7 +181,6 @@ class OPUSDataset(Dataset):
         image = load_files(self.image_list[idx])
         labels = load_files(self.labels_list[idx])
         cl = self.classes_list[idx]
-
 
         if labels.ndim < 3:
             labels = np.expand_dims(labels, axis=2)
@@ -285,6 +284,22 @@ class ToTensor(object):
                 'labels': torch.from_numpy(labels)}
 
 
+class NumpyNormalize(object):
+    def __init__(self, mean, std):
+        self.mean = mean
+        self.std = std
+
+    def __call__(self, sample):
+        image, labels = sample['image'], sample['labels']
+
+        transform = transforms.Normalize(mean=self.mean, std=self.std)
+
+        image = (transform(torch.from_numpy(image))).numpy()
+
+
+        return {'image': image, 'labels': labels}
+
+
 class OPUSDataLoader(BaseDataLoader):
     """
     OPUS data loader
@@ -309,18 +324,18 @@ class OPUSDataLoader(BaseDataLoader):
         self.cross_val = cross_val
 
         if training:
-            self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, cross_val=cross_val,
-                                       transform=transforms.Compose([
-                                           elastic_deform(
-                                               augmentation_probability),
-                                           Rescale(input_size),
-                                           ToTensor()]))
+            self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, cross_val=cross_val, transform=transforms.Compose([
+                elastic_deform(augmentation_probability),
+                Rescale(input_size),
+                NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensor()
+                ]))
         else:
-            self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, cross_val=cross_val,
-                                       transform=transforms.Compose([
-                                           Rescale(input_size),
-                                           ToTensor()
-                                       ]))
+            self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, cross_val=cross_val, transform=transforms.Compose([
+                Rescale(input_size),
+                NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+                ToTensor()
+            ]))
 
         super().__init__(self.dataset, batch_size, shuffle,
                          validation_split, num_workers, test_config=None)
@@ -331,6 +346,7 @@ class OPUSDataLoader(BaseDataLoader):
                                               cross_val=self.cross_val,
                                               transform=transforms.Compose([
                                                   Rescale(self.input_size),
+                                                  NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                                                   ToTensor()]))
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']

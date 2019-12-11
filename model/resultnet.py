@@ -1,6 +1,7 @@
 import torch.nn as nn
 import math
 import torch.utils.model_zoo as model_zoo
+import torch
 
 from base import BaseModel
 
@@ -68,6 +69,16 @@ class ResUltNet(BaseModel):
         self.layer1 = self._make_layer(block, 64, layers[0])
         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+
+        #self.conv1.requires_grad = False
+        #self.bn1.requires_grad = False
+        #self.relu.requires_grad = False
+        #self.maxpool.requires_grad = False
+        #self.layer1.requires_grad = False
+        #self.layer2.requires_grad = False
+        #self.layer3.requires_grad = False
+
+
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(25088 * block.expansion, num_classes) # 512
@@ -80,7 +91,18 @@ class ResUltNet(BaseModel):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-        #self.load_state_dict(model_zoo.load_url(model_urls['resnet18']))
+        self._load_pretrained_resnet()
+
+    def _load_pretrained_resnet(self):
+        pretrained_dict = model_zoo.load_url(model_urls['resnet18'])
+        model_dict = self.state_dict()
+        #pretrained_dict = [(k, v) for k, v in pretrained_dict.items()]
+        #print(pretrained_dict)
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and (model_dict[k].shape == pretrained_dict[k].shape)}
+        #for k, v in pretrained_dict.items():
+        #    print('pretraied keys, size: ', k, ', ', len(v))
+        model_dict.update(pretrained_dict)
+        self.load_state_dict(model_dict, strict=False)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
