@@ -357,8 +357,9 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples):
     """
     gt_title = ['Input Image', 'GT Segmentation']
     s_titles = [f'S_{i}' for i in range(metrics_sample_count)]
-    titles = gt_title + s_titles
+    titles = gt_title + s_titles + ['Variance']
 
+    heatmaps = visualization.samples_heatmap(samples)
 
 
     # add num of channels dim - needed for the metric format
@@ -370,7 +371,8 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples):
     vis_data = torch.cat((overlayed_labels, samples), dim=1)
     img_metric_grid = visualization.make_image_metric_grid(vis_data,
                                                             enable_helper_dots=True,
-                                                            titles=titles)
+                                                            titles=titles,
+                                                            heatMaps=heatmaps)
     return img_metric_grid
 
 
