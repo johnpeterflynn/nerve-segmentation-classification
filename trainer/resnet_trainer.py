@@ -31,6 +31,8 @@ class ResNetTrainer(BaseTrainer):
 
         self.best_val_accuracy = 0
 
+
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
@@ -41,7 +43,9 @@ class ResNetTrainer(BaseTrainer):
         self.model.train()
         self.train_metrics.reset()
         train_confusion_matrix = torch.zeros(3, 3, dtype=torch.long)
-        for batch_idx, (data, _, target_class) in enumerate(self.data_loader):
+        print('train epoch: ', epoch)
+        for batch_idx, (data, label, target_class, idx) in enumerate(self.data_loader):
+            print('train batch, item: ', batch_idx, ', ', idx)
             data, target_class = data.to(self.device), target_class.to(self.device)
 
             self.optimizer.zero_grad()
@@ -95,7 +99,9 @@ class ResNetTrainer(BaseTrainer):
         self.valid_metrics.reset()
         with torch.no_grad():
             val_confusion_matrix = torch.zeros(3, 3, dtype=torch.long)
-            for batch_idx, (data, _, target_class) in enumerate(self.valid_data_loader):
+            print('val epoch: ', epoch)
+            for batch_idx, (data, label, target_class, idx) in enumerate(self.valid_data_loader):
+                print('val batch, item: ', batch_idx, ', ', idx)
                 data, target_class = data.to(self.device), target_class.to(self.device)
 
                 output = self.model(data)
