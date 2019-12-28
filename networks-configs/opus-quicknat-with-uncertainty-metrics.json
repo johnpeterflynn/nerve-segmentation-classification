@@ -24,9 +24,9 @@
         "type": "OPUSDataLoader",
         "args": {
             "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
-            "batch_size": 2,
+            "batch_size": 1,
             "shuffle": true,
-            "validation_split": 0.1,
+            "validation_split": 0,
             "num_workers": 2,
             "input_size": 400,
             "augmentation_probability": 0.5,
@@ -58,11 +58,11 @@
         "type": "OPUSWithUncertaityTrainer",
         "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 20,
         "verbosity": 2,
         "monitor": "min val_loss",
         "early_stop": 100,
         "tensorboard": true,
-        "metrics_sample_count": 5
+        "metrics_sample_count": 4
     }
 }
