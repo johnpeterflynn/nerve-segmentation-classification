@@ -8,8 +8,7 @@ from torch.distributions import Independent, Normal, kl
 
 from base import BaseModel
 from model.quicknat import QuickNat
-from utils import (init_weights, init_weights_orthogonal_normal,
-                   l2_regularisation)
+from utils import util 
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -54,7 +53,7 @@ class Encoder(BaseModel):
 
         self.layers = nn.Sequential(*layers)
 
-        self.layers.apply(init_weights)
+        self.layers.apply(util.init_weights)
 
     def forward(self, input):
         output = self.layers(input)
@@ -163,8 +162,8 @@ class Fcomb(BaseModel):
                 self.num_filters[0], self.num_classes, kernel_size=1)
 
             if initializers['w'] == 'orthogonal':
-                self.layers.apply(init_weights_orthogonal_normal)
-                self.last_layer.apply(init_weights_orthogonal_normal)
+                self.layers.apply(util.init_weights_orthogonal_normal)
+                self.last_layer.apply(util.init_weights_orthogonal_normal)
             else:
                 self.layers.apply(init_weights)
                 self.last_layer.apply(init_weights)
