@@ -271,6 +271,7 @@ def estimate_weights_mfb(labels):
     class_weights += 2 * edge_weights
     return class_weights, weights
 
+
 def show_labels(image, labels, prediction, results_path, i):
     _, a, b, _ = np.where(labels != 0)
     e, f = np.where(prediction != 0)
@@ -299,11 +300,11 @@ def impose_labels_on_image(image, labels, prediction):
     fig = plt.figure(figsize=(4, 4))
     plt.imshow(image, cmap='gray')
     aa = plt.scatter(b, a, s=1, marker='o', c='red', alpha=0.5)
-    #aa.set_label('label')
-    #plt.legend()
+    # aa.set_label('label')
+    # plt.legend()
     bb = plt.scatter(f, e, s=2, marker='o', c='blue', alpha=0.1)
-    #bb.set_label('prediction')
-    #plt.legend()
+    # bb.set_label('prediction')
+    # plt.legend()
     plt.axis('off')
     plt.tight_layout(0)
 
@@ -359,10 +360,9 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_
     gt_title = ['Input Image', 'GT Segmentation']
     #gt_title = ['GT Segmentation']
     s_titles = [f'S_{i}' for i in range(metrics_sample_count)]
-    titles = gt_title + s_titles + ['Avg-Output']+  ['Variance']
+    titles = gt_title + s_titles + ['Avg-Output'] + ['Variance']
 
     heatmaps = visualization.samples_heatmap(samples)
-
 
     # add num of channels dim - needed for the metric format
     target = targets.unsqueeze(1).unsqueeze(1)
@@ -376,20 +376,21 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_
     vis_data = torch.cat((vis_data, avg_output), dim=1)
 
     img_metric_grid = visualization.make_image_metric_grid(vis_data,
-                                                            enable_helper_dots=True,
-                                                            titles=titles,
-                                                            heatMaps=heatmaps)
+                                                           enable_helper_dots=True,
+                                                           titles=titles,
+                                                           heatMaps=heatmaps)
     return img_metric_grid
 
+
 def save_grid(grid, save_dir, idx):
-    
+
     plt.figure(figsize=(100, 100))
     grid = grid.permute(1, 2, 0)
     plt.imshow(grid)
-    save_dir  = Path(save_dir) /'test-images/'
+    save_dir = Path(save_dir) / 'test-images/'
     save_dir.mkdir(parents=True, exist_ok=True)
     plt.axis("off")
-    plt.savefig( save_dir / (str(idx) + "test-result.png"))
+    plt.savefig(save_dir / (str(idx) + "test-result.png"))
     torch.save(grid, 'img.b')
 
 
@@ -398,3 +399,27 @@ def argmax_over_dim(samples, dim=2, keepdim=True):
     if keepdim:
         idx.unsqueeze_(dim=dim)
     return idx.float()
+
+
+def sample_and_compute_mean(model, data, num_samples, num_channels_model, device):
+    """
+        Samples the model 'num_samples' times
+        then computes the average of these samples
+        which would be the ouput of the model. And the 
+        samples will be used later to compute uncertainty
+        metrics.
+
+        model: the model to evaluate the data with
+        data: [BATCH_SIZE x C x H x W]
+        num_samples: Number of MC samples
+        num_channels_model: the number of the channels in the model output
+        device: device to use (cuda or cpu)
+    """
+
+    batch_size, num_channels, image_size = data.shape[0], num_channels_model, tuple(data.shape[2:])
+    samples = torch.zeros(
+        (batch_size, num_samples, num_channels, *image_size)).to(device)
+    for i in range(num_samples):
+        samples[:, i, ...] = model(data)
+
+    return samples.mean(dim=1), samples

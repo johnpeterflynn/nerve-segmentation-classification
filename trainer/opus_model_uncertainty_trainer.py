@@ -1,36 +1,23 @@
 import numpy as np
 import torch
 from torchvision.utils import make_grid
+
 from base import BaseTrainer
-from utils import inf_loop, MetricTracker, argmax_over_dim, impose_labels_on_image, visualization, build_segmentation_grid
+from trainer import Trainer
+from utils import util
 
 
-class OPUSWithUncertaityTrainer(BaseTrainer):
+class OPUSWithUncertaityTrainer(Trainer):
     """
     Trainer class
     """
 
     def __init__(self, model, criterion, metric_ftns, optimizer, config, data_loader,
                  valid_data_loader=None, lr_scheduler=None, len_epoch=None, experiment=None):
-        super().__init__(model, criterion, metric_ftns, optimizer, config, experiment)
-        self.config = config
-        self.data_loader = data_loader
-        if len_epoch is None:
-            # epoch-based training
-            self.len_epoch = len(self.data_loader)
-        else:
-            # iteration-based training
-            self.data_loader = inf_loop(data_loader)
-            self.len_epoch = len_epoch
-        self.valid_data_loader = valid_data_loader
-        self.do_validation = self.valid_data_loader is not None
-        self.lr_scheduler = lr_scheduler
-        self.log_step = int(np.sqrt(data_loader.batch_size))
 
-        self.train_metrics = MetricTracker(
-            'loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
-        self.valid_metrics = MetricTracker(
-            'loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
+        super().__init__(model, criterion, metric_ftns, optimizer, config, data_loader,
+                         valid_data_loader=valid_data_loader, lr_scheduler=lr_scheduler, len_epoch=len_epoch, experiment=experiment)
+
         self.metrics_sample_count = config['trainer']['metrics_sample_count']
 
     def _train_epoch(self, epoch):
@@ -48,7 +35,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
 
             self.optimizer.zero_grad()
 
-            output, _ = self._sample_and_compute_mean(self.model, data)
+            output, _ = util.sample_and_compute_mean(self.model, data, self.metrics_sample_count, 2, self.device)
 
             loss = self.criterion(output, target)
             loss.backward()
@@ -96,8 +83,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
             for batch_idx, (data, target, idxs) in enumerate(self.valid_data_loader):
                 data, target = data.to(self.device), target.to(self.device)
 
-                output, samples = self._sample_and_compute_mean(
-                    self.model, data)
+                output, samples = util.sample_and_compute_mean(self.model, data, self.metrics_sample_count, 2, self.device)
 
                 loss = self.criterion(output, target)
 
@@ -105,8 +91,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
                     (epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
 
-                # [BATCH_SIZE x SAMPLE_SIZE x 1 x H x W]
-                samples = argmax_over_dim(samples)
+                samples = util.argmax_over_dim(samples)
 
                 for met in self.metric_ftns:
                     if met.__name__ in ["ged", "dice_agreement_in_samples", "iou_samples_per_label", "variance_ncc_samples"]:
@@ -116,7 +101,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
                         self.valid_metrics.update(
                             met.__name__, met(output, target))
 
-                output = argmax_over_dim(output, dim=1)
+                output = util.argmax_over_dim(output, dim=1)
 
                 for idx in range(data.shape[0]):
                     results_list.append(
@@ -134,16 +119,6 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
 
         return self.valid_metrics.result()
 
-    def _progress(self, batch_idx):
-        base = '[{}/{} ({:.0f}%)]'
-        if hasattr(self.data_loader, 'n_samples'):
-            current = batch_idx * self.data_loader.batch_size
-            total = self.data_loader.n_samples
-        else:
-            current = batch_idx
-            total = self.len_epoch
-        return base.format(current, total, 100.0 * current / total)
-
     def _visualize_validation_set(self, inputs, samples, target, output):
         """
             inputs: [BATCH_SIZE x NUM_CHANNELS x H x W] #  NUM_CHANNELS = 7 for opus 
@@ -151,27 +126,7 @@ class OPUSWithUncertaityTrainer(BaseTrainer):
             target: [BATCH_SIZE x  H x W]
             output: [BATCH_SIZE x  H x W]
         """
-        img_metric_grid = build_segmentation_grid(
+        img_metric_grid = util.build_segmentation_grid(
             self.metrics_sample_count, target, inputs, samples, output)
 
         self.writer.add_image(f'segmentations_ouput', img_metric_grid.cpu())
-
-    def _sample_and_compute_mean(self, model, data):
-        """
-            Samples the model self.metrics_sample_count times
-            then computes the average of these samples
-            which would be the ouput of the model. And the 
-            samples will be used later to compute uncertainty
-            metrics.
-        """
-
-        num_samples = self.metrics_sample_count
-
-        batch_size, num_channels, image_size = data.shape[0], 2, tuple(data.shape[2:])
-        samples = torch.zeros(
-            (batch_size, num_samples, num_channels, *image_size)).to(self.device)
-        for i in range(num_samples):
-            samples[:, i, ...] = model(data)
-
-        return samples.mean(dim=1), samples
-
