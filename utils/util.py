@@ -373,10 +373,8 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_
 
     overlayed_labels = torch.cat((inputs, target), dim=1)
     vis_data = torch.cat((overlayed_labels, samples), dim=1)
-    print(vis_data.shape)
-    print(avg_output.shape)
     vis_data = torch.cat((vis_data, avg_output), dim=1)
-    #vis_data = torch.cat((target, samples), dim=1)
+
     img_metric_grid = visualization.make_image_metric_grid(vis_data,
                                                             enable_helper_dots=True,
                                                             titles=titles,

@@ -77,7 +77,6 @@ class BaseTrainer:
                 self.logger.info('    {:15s}: {}'.format(str(key), value))
 
             # evaluate model performance according to configured metric, save best checkpoint as model_best
-            best = False
             if self.mnt_mode != 'off':
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
@@ -92,7 +91,6 @@ class BaseTrainer:
                 if improved:
                     self.mnt_best = log[self.mnt_metric]
                     not_improved_count = 0
-                    best = True
                 else:
                     not_improved_count += 1
 
@@ -100,9 +98,11 @@ class BaseTrainer:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
                     break
-
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=best)
+            if improved:
+                # Save the model if there is an improvement immediately 
+                self._save_checkpoint(epoch, save_best=True)
+            elif epoch % self.save_period == 0:
+                self._save_checkpoint(epoch, save_best=False)
 
     def _prepare_device(self, n_gpu_use):
         """
@@ -155,8 +155,9 @@ class BaseTrainer:
         resume_path = str(resume_path)
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path, map_location=torch.device(self.device))
-        self.start_epoch = checkpoint['epoch'] + 1
-        self.mnt_best = checkpoint['monitor_best']
+        #self.start_epoch = checkpoint['epoch'] + 1
+        self.start_epoch =  1
+        #self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
         if checkpoint['config']['arch'] != self.config['arch']:
