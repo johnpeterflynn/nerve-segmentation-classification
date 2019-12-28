@@ -16,13 +16,14 @@ import scipy.io
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils import visualization
 from polyaxon_client.tracking import (Experiment, get_data_paths,
                                       get_outputs_path)
 from scipy import interpolate as ipol
 from scipy import misc
 from scipy.ndimage.interpolation import map_coordinates
 from torch.autograd import Variable
+
+from utils import visualization
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -348,7 +349,7 @@ def load_files(filename):
         return misc.imread(filename)
 
 
-def build_segmentation_grid(metrics_sample_count, targets, inputs, samples):
+def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_output):
     """
     TODO: Make more generic, currently it works only for binary segmentation
         inputs: [BATCH_SIZE x NUM_CHANNELS x H x W] #  NUM_CHANNELS = 7 for opus 
@@ -356,30 +357,46 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples):
         targets: [BATCH_SIZE x  H x W]
     """
     gt_title = ['Input Image', 'GT Segmentation']
+    #gt_title = ['GT Segmentation']
     s_titles = [f'S_{i}' for i in range(metrics_sample_count)]
-    titles = gt_title + s_titles + ['Variance']
+    titles = gt_title + s_titles + ['Avg-Output']+  ['Variance']
 
     heatmaps = visualization.samples_heatmap(samples)
 
 
     # add num of channels dim - needed for the metric format
     target = targets.unsqueeze(1).unsqueeze(1)
+    avg_output = avg_output.unsqueeze(1)
+
     inputs = inputs[:, 0, :, :]  # pick one spectrum just to show image+labels
     inputs = inputs.unsqueeze(1).unsqueeze(1)
 
     overlayed_labels = torch.cat((inputs, target), dim=1)
     vis_data = torch.cat((overlayed_labels, samples), dim=1)
+    print(vis_data.shape)
+    print(avg_output.shape)
+    vis_data = torch.cat((vis_data, avg_output), dim=1)
+    #vis_data = torch.cat((target, samples), dim=1)
     img_metric_grid = visualization.make_image_metric_grid(vis_data,
                                                             enable_helper_dots=True,
                                                             titles=titles,
                                                             heatMaps=heatmaps)
     return img_metric_grid
 
-
-def save_grid(grid, save_dir):
+def save_grid(grid, save_dir, idx):
+    
+    plt.figure(figsize=(100, 100))
     grid = grid.permute(1, 2, 0)
     plt.imshow(grid)
     save_dir  = Path(save_dir) /'test-images/'
     save_dir.mkdir(parents=True, exist_ok=True)
     plt.axis("off")
-    plt.savefig( save_dir / "test-result.png")
+    plt.savefig( save_dir / (str(idx) + "test-result.png"))
+    torch.save(grid, 'img.b')
+
+
+def argmax_over_dim(samples, dim=2, keepdim=True):
+    _, idx = torch.max(samples, dim=dim)
+    if keepdim:
+        idx.unsqueeze_(dim=dim)
+    return idx.float()
