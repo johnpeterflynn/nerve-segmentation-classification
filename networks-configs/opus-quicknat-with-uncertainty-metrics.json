@@ -1,7 +1,7 @@
 {
     "name": "QuickNat",
     "n_gpu": 1,
-    "seed": true,
+    "seed": "123",
     "arch": {
         "type": "QuickNat",
         "args": {
@@ -29,7 +29,8 @@
             "validation_split": 0,
             "num_workers": 2,
             "input_size": 400,
-            "augmentation_probability": 0.5
+            "augmentation_probability": 0.5,
+            "with_idx": true
         }
     },
     "optimizer": {
@@ -42,7 +43,9 @@
     },
     "loss": "dice",
     "metrics": [
-        "dice_score"
+        "dice_score",
+        "dice_agreement_in_samples",
+        "iou_samples_per_label"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -52,13 +55,18 @@
         }
     },
     "trainer": {
-        "type": "OPUSTrainer",
+        "type": "OPUSWithUncertaityTrainer",
         "epochs": 200,
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 20,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 50,
-        "tensorboard": true
+        "early_stop": 100,
+        "tensorboard": true,
+        "mc_sample_count": {
+            "train": 1,
+            "val_test": 5
+        },
+        "pre_training": false
     }
 }

@@ -5,13 +5,12 @@ kind: experiment
 
 framework: pytorch
 
-tags: [examples]
+tags: [experiment test]
 
 build:
   image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
   build_steps:
     - pip install -r requirements.txt
-    #- pip install tensorboardX
   env_vars:
     - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
 
@@ -28,8 +27,7 @@ environment:
       limits: 1
 
 params:  
-  conf_file: networks-configs/opus-quicknat.json
-  data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
+  model_path: /outputs/faridyagubbayli/opus/experiments/118228/models/QuickNat/1208_161438/checkpoint-epoch100.pth
 
 run:
-  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}
+  cmd: python3 -u testers/opus_tester.py -r {{model_path}}  -e polyaxon

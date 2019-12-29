@@ -17,3 +17,4 @@ var
 tmp
 save
 ./saved/*
+.idea

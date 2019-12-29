@@ -81,6 +81,7 @@ def dice_agreement_in_samples(samples, _=None):
     n = samples.shape[1]
     num_labels = samples.shape[2]
     dice_per_label = torch.zeros((batch_size, num_labels), dtype=torch.float)
+    dice_per_label = dice_per_label.to(_device)
 
     num_pairs = 0
     for i, j in combinations(list(range(n)), 2):
@@ -96,7 +97,7 @@ def dice_agreement_in_samples(samples, _=None):
 
         sum_i = sum_intersection[:].float()
         sum_u = sum_union[:].float()
-        dice_per_label[:, :] += (sum_i.float() + 1e-6) / (sum_u + 1e-6)
+        dice_per_label[:, :] += (sum_i + 1e-6) / (sum_u + 1e-6)
 
         num_pairs += 1
 

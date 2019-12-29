@@ -13,7 +13,7 @@ from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_pat
 import utils as util
 
 CustomArgs = util.namedtuple_with_defaults(
-    'CustomArgs', 'flags type target action', (None, ) * 4)
+    'CustomArgs', 'flags type target action help', (None, ) * 5)
 
 
 class BaseRunner:
@@ -46,6 +46,7 @@ class BaseRunner:
         args.add_argument('-s', '--seed', default=None, type=int,
                           help='Seed to enable reproducibility')
 
+
     def add_dynamic_arguments(self):
         """
             custom cli options to modify configuration from default values 
@@ -59,7 +60,11 @@ class BaseRunner:
                        target='data_loader;args;batch_size'),
             CustomArgs(['--save_dir'], type=str, target='trainer;save_dir'),
             CustomArgs(['--data_dir'], type=str,
-                       target='data_loader;args;data_dir')
+                       target='data_loader;args;data_dir'),
+            CustomArgs(['-t', '--transfer_learning'],
+                       target="trainer;pre_training",
+                       action="store_true",
+                       help='Use the -r args to do transfer learnign (default: False)')
         ]
 
     def parse(self):
@@ -102,7 +107,8 @@ class BaseRunner:
                        config['optimizer']['args']['lr'],
                        config['loss']]
 
-        description = "Epochs {0}: Arch: {1} Optimizer: {2} lr: {3} Loss: {4}".format(*description)
+        description = "Epochs {0}: Arch: {1} Optimizer: {2} lr: {3} Loss: {4}".format(
+            *description)
         experiment.set_description(description)
 
         if 'type' in config['trainer'].keys():
@@ -115,7 +121,7 @@ class BaseRunner:
                           config=config,
                           data_loader=data_loader,
                           valid_data_loader=valid_data_loader,
-                          lr_scheduler=lr_scheduler, 
+                          lr_scheduler=lr_scheduler,
                           experiment=experiment)
         trainer.train()
 

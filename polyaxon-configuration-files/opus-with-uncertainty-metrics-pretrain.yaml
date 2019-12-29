@@ -28,8 +28,9 @@ environment:
       limits: 1
 
 params:  
-  conf_file: networks-configs/opus-quicknat.json
+  conf_file: networks-configs/opus-quicknat-with-uncertainty-metrics.json
   data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
+  pretrained_model_path: /outputs/johnpeterflynn/kaggle/experiments/118103/models/QuickNat/1206_145605/model_best.pth  
 
 run:
-  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}}
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -e polyaxon --data_dir {{data_dir}} -r {{pretrained_model_path}} -t

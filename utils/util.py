@@ -23,6 +23,8 @@ from scipy import misc
 from scipy.ndimage.interpolation import map_coordinates
 from torch.autograd import Variable
 
+from utils import visualization
+
 np.seterr(divide='ignore', invalid='ignore')
 
 
@@ -269,6 +271,7 @@ def estimate_weights_mfb(labels):
     class_weights += 2 * edge_weights
     return class_weights, weights
 
+
 def show_labels(image, labels, prediction, results_path, i):
     _, a, b, _ = np.where(labels != 0)
     e, f = np.where(prediction != 0)
@@ -286,6 +289,39 @@ def show_labels(image, labels, prediction, results_path, i):
     plt.axis('off')
     plt.savefig(os.path.join(
         results_path, 'label plus pred' + str(i) + '.png'))
+
+
+def impose_labels_on_image(image, labels, prediction):
+    _, a, b = np.where(labels != 0)
+    e, f = np.where(prediction != 0)
+    _, x, y, z = image.shape
+    image = image[0, 0, :, :]  # pick one spectrum just to show image+labels
+
+    fig = plt.figure(figsize=(4, 4))
+    plt.imshow(image, cmap='gray')
+    aa = plt.scatter(b, a, s=1, marker='o', c='red', alpha=0.5)
+    # aa.set_label('label')
+    # plt.legend()
+    bb = plt.scatter(f, e, s=2, marker='o', c='blue', alpha=0.1)
+    # bb.set_label('prediction')
+    # plt.legend()
+    plt.axis('off')
+    plt.tight_layout(0)
+
+    fig.canvas.draw()
+
+    # Convert from figure to image
+    buf = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+    buf = buf.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+    plt.close(fig)
+
+    # Convert to pytorch tensor with format C x H x W
+    torch_buf = torch.from_numpy(buf)
+    torch_buf = torch_buf.permute(2, 0, 1)
+    torch_buf = torch_buf.unsqueeze(0)
+
+    return torch_buf
 
 
 def load_files(filename):
@@ -312,3 +348,93 @@ def load_files(filename):
 
     if filename.endswith('.png'):
         return misc.imread(filename)
+
+
+def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_output):
+    """
+    TODO: Make more generic, currently it works only for binary segmentation
+        inputs: [BATCH_SIZE x NUM_CHANNELS x H x W] #  NUM_CHANNELS = 7 for opus 
+        samples: [BATCH_SIZE x SAMPLE_SIZE x NUM_CHANNELS x H x W]
+        targets: [BATCH_SIZE x  H x W]
+    """
+    gt_title = ['Input Image', 'GT Segmentation']
+    #gt_title = ['GT Segmentation']
+    s_titles = [f'S_{i}' for i in range(metrics_sample_count)]
+    titles = gt_title + s_titles + ['Avg-Output'] + ['Variance']
+
+    heatmaps = visualization.samples_heatmap(samples)
+
+    # add num of channels dim - needed for the metric format
+    target = targets.unsqueeze(1).unsqueeze(1)
+    avg_output = avg_output.unsqueeze(1)
+
+    inputs = inputs[:, 0, :, :]  # pick one spectrum just to show image+labels
+    inputs = inputs.unsqueeze(1).unsqueeze(1)
+
+    overlayed_labels = torch.cat((inputs, target), dim=1)
+    vis_data = torch.cat((overlayed_labels, samples), dim=1)
+    vis_data = torch.cat((vis_data, avg_output), dim=1)
+
+    img_metric_grid = visualization.make_image_metric_grid(vis_data,
+                                                           enable_helper_dots=True,
+                                                           titles=titles,
+                                                           heatMaps=heatmaps)
+    return img_metric_grid
+
+
+def save_grid(grid, save_dir, idx=None):
+
+    plt.figure(figsize=(100, 100))
+    grid = grid.permute(1, 2, 0)
+    plt.imshow(grid)
+    save_dir = Path(save_dir) / 'test-images/'
+    save_dir.mkdir(parents=True, exist_ok=True)
+    plt.axis("off")
+
+    if idx is None:
+        plt.savefig(save_dir / ("test-result.png"))
+    else:
+        plt.savefig(save_dir / (str(idx) + "test-result.png"))
+
+def save_img(img, save_dir, idx):
+
+    plt.figure(figsize=(50, 50))
+    plt.imshow(img)
+    save_dir = Path(save_dir) / 'test-images/'
+    save_dir.mkdir(parents=True, exist_ok=True)
+    plt.axis("off")
+
+    plt.savefig(save_dir / (str(idx) + ".png"))
+
+
+
+
+def argmax_over_dim(samples, dim=2, keepdim=True):
+    _, idx = torch.max(samples, dim=dim)
+    if keepdim:
+        idx.unsqueeze_(dim=dim)
+    return idx.float()
+
+
+def sample_and_compute_mean(model, data, num_samples, num_channels_model, device):
+    """
+        Samples the model 'num_samples' times
+        then computes the average of these samples
+        which would be the ouput of the model. And the 
+        samples will be used later to compute uncertainty
+        metrics.
+
+        model: the model to evaluate the data with
+        data: [BATCH_SIZE x C x H x W]
+        num_samples: Number of MC samples
+        num_channels_model: the number of the channels in the model output
+        device: device to use (cuda or cpu)
+    """
+
+    batch_size, num_channels, image_size = data.shape[0], num_channels_model, tuple(data.shape[2:])
+    samples = torch.zeros(
+        (batch_size, num_samples, num_channels, *image_size)).to(device)
+    for i in range(num_samples):
+        samples[:, i, ...] = model(data)
+
+    return samples.mean(dim=1), samples
