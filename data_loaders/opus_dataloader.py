@@ -1,6 +1,7 @@
 import os
 import random
 import re
+import math
 
 import numpy as np
 import torch
@@ -44,7 +45,7 @@ def class_str_to_index(class_str):
 
 class OPUSDataset(Dataset):
 
-    def __init__(self, phase, data_path, transform=None, with_idx=False):
+    def __init__(self, phase, data_path, transform=None, with_idx=False, cross_val=None):
 
         self.transform = transform
         self.phase = phase
@@ -53,24 +54,18 @@ class OPUSDataset(Dataset):
         self.us_list = list()
         self.labels_list = list()
         self.classes_list = list()
-        self.patients_list = list()
         self.with_idx = with_idx
+        self.patients_list = ['patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
+                              'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_011']
 
-        # =============================================================================
-        # TRAINING files
-        # =============================================================================
-        if phase == 'train':
-            # patients for training
-            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
-                                  'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
+        if cross_val is None:
+            self.use_fixed_dataset(phase)
+        else:
+            self.use_cross_validation(cross_val, phase)
 
-        # =============================================================================
-        # VALIDATION files
-        # =============================================================================
-        if phase == 'val':
-            # patients for validation
-            self.patients_list = ('patient_011',)  # crossval_5/ complete
+        print(phase + " dataset:" + ", ".join(self.patients_list))
 
+        
         # =============================================================================
         # TESTING files
         # =============================================================================
@@ -89,6 +84,37 @@ class OPUSDataset(Dataset):
         self.image_list = [a for a, _, _ in sorted_data]
         self.labels_list = [b for _, b, _ in sorted_data]
         self.classes_list = [c for _, _, c in sorted_data]
+
+
+    def use_cross_validation(self, cross_val, phase):
+
+        seed = 123
+        random.seed(seed)
+        np.random.seed(seed)
+
+        valset_idx = int(cross_val['valset_idx'])
+        n_fold = int(cross_val['n_fold'])
+
+        fold_size = math.ceil(len(self.patients_list)/n_fold)
+
+        random.shuffle(self.patients_list)
+        idx_full = np.arange(len(self.patients_list))
+
+        if phase == 'train':
+            train_idx = np.delete(idx_full, np.arange(valset_idx * fold_size, fold_size*(valset_idx + 1)))
+            self.patients_list = [self.patients_list[i] for i in train_idx]
+        if phase == 'val':
+            self.patients_list = self.patients_list[valset_idx * fold_size: fold_size*(valset_idx + 1)]
+
+    def use_fixed_dataset(self, phase):
+        if phase == 'train':
+            # patients for training
+            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
+                                  'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
+
+        if phase == 'val':
+            # patients for validation
+            self.patients_list = ('patient_011',)
 
     def _load_patient(self, data_path_patient):
         """Load patient data from path"""
@@ -261,22 +287,27 @@ class OPUSDataLoader(BaseDataLoader):
                  training=True,
                  input_size=400,
                  augmentation_probability=0.5,
-                 with_idx=False):
+                 with_idx=False,
+                 cross_val=None):
 
         self.data_dir = data_dir
         self.input_size = input_size
         self.augmentation_probability = augmentation_probability
         self.with_idx = with_idx
+        self.cross_val = cross_val
+
         if training:
-            self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, transform=transforms.Compose([
-                elastic_deform(augmentation_probability),
-                Rescale(input_size),
-                ToTensor()]))
+            self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, cross_val=cross_val,
+                                       transform=transforms.Compose([
+                                           elastic_deform(augmentation_probability),
+                                           Rescale(input_size),
+                                           ToTensor()]))
         else:
-            self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, transform=transforms.Compose([
-                Rescale(input_size),
-                ToTensor()
-            ]))
+            self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, cross_val=cross_val,
+                                       transform=transforms.Compose([
+                                           Rescale(input_size),
+                                           ToTensor()
+                                       ]))
 
         super().__init__(self.dataset, batch_size, shuffle,
                          validation_split, num_workers, test_config=None)
@@ -284,6 +315,7 @@ class OPUSDataLoader(BaseDataLoader):
     def split_validation(self):
         transformed_dataset_val = OPUSDataset('val', self.data_dir,
                                               with_idx=self.with_idx,
+                                              cross_val=self.cross_val,
                                               transform=transforms.Compose([
                                                   Rescale(self.input_size),
                                                   ToTensor()]))
