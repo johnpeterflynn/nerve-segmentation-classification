@@ -25,6 +25,9 @@ environment:
     gpu:
       requests: 1
       limits: 1
-  
+
+params:  
+  model_path: /outputs/faridyagubbayli/opus/experiments/118228/models/QuickNat/1208_161438/checkpoint-epoch100.pth
+
 run:
-  cmd: python3 -u runners/opus_tester.py -r /outputs/faridyagubbayli/opus/experiments/118228/models/QuickNat/1208_161438/checkpoint-epoch100.pth  -e polyaxon
+  cmd: python3 -u testers/opus_tester.py -r {{model_path}}  -e polyaxon
