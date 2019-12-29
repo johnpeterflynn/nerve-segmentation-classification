@@ -382,7 +382,7 @@ def build_segmentation_grid(metrics_sample_count, targets, inputs, samples, avg_
     return img_metric_grid
 
 
-def save_grid(grid, save_dir, idx):
+def save_grid(grid, save_dir, idx=None):
 
     plt.figure(figsize=(100, 100))
     grid = grid.permute(1, 2, 0)
@@ -390,8 +390,23 @@ def save_grid(grid, save_dir, idx):
     save_dir = Path(save_dir) / 'test-images/'
     save_dir.mkdir(parents=True, exist_ok=True)
     plt.axis("off")
-    plt.savefig(save_dir / (str(idx) + "test-result.png"))
-    torch.save(grid, 'img.b')
+
+    if idx is None:
+        plt.savefig(save_dir / ("test-result.png"))
+    else:
+        plt.savefig(save_dir / (str(idx) + "test-result.png"))
+
+def save_img(img, save_dir, idx):
+
+    plt.figure(figsize=(50, 50))
+    plt.imshow(img)
+    save_dir = Path(save_dir) / 'test-images/'
+    save_dir.mkdir(parents=True, exist_ok=True)
+    plt.axis("off")
+
+    plt.savefig(save_dir / (str(idx) + ".png"))
+
+
 
 
 def argmax_over_dim(samples, dim=2, keepdim=True):
