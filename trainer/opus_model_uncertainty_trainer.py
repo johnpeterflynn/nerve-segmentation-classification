@@ -18,7 +18,8 @@ class OPUSWithUncertaityTrainer(Trainer):
         super().__init__(model, criterion, metric_ftns, optimizer, config, data_loader,
                          valid_data_loader=valid_data_loader, lr_scheduler=lr_scheduler, len_epoch=len_epoch, experiment=experiment)
 
-        self.metrics_sample_count = config['trainer']['metrics_sample_count']
+        self.train_mc_sample_count = config['trainer']['mc_sample_count']['train']
+        self.val_mc_sample_count = config['trainer']['mc_sample_count']['val_test']
 
     def _train_epoch(self, epoch):
         """
@@ -35,7 +36,7 @@ class OPUSWithUncertaityTrainer(Trainer):
 
             self.optimizer.zero_grad()
 
-            output, _ = util.sample_and_compute_mean(self.model, data, self.metrics_sample_count, 2, self.device)
+            output, _ = util.sample_and_compute_mean(self.model, data, self.train_mc_sample_count, 2, self.device)
 
             loss = self.criterion(output, target)
             loss.backward()
@@ -83,7 +84,7 @@ class OPUSWithUncertaityTrainer(Trainer):
             for batch_idx, (data, target, idxs) in enumerate(self.valid_data_loader):
                 data, target = data.to(self.device), target.to(self.device)
 
-                output, samples = util.sample_and_compute_mean(self.model, data, self.metrics_sample_count, 2, self.device)
+                output, samples = util.sample_and_compute_mean(self.model, data, self.val_mc_sample_count, 2, self.device)
 
                 loss = self.criterion(output, target)
 
@@ -127,6 +128,6 @@ class OPUSWithUncertaityTrainer(Trainer):
             output: [BATCH_SIZE x  H x W]
         """
         img_metric_grid = util.build_segmentation_grid(
-            self.metrics_sample_count, target, inputs, samples, output)
+            self.val_mc_sample_count, target, inputs, samples, output)
 
         self.writer.add_image(f'segmentations_ouput', img_metric_grid.cpu())

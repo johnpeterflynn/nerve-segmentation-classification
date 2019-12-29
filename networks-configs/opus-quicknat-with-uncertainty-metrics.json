@@ -63,6 +63,10 @@
         "monitor": "min val_loss",
         "early_stop": 100,
         "tensorboard": true,
-        "metrics_sample_count": 4
+        "mc_sample_count": {
+            "train": 1,
+            "val_test": 5
+        },
+        "pre_training": false
     }
 }
