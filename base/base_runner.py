@@ -13,7 +13,7 @@ from polyaxon_client.tracking import Experiment, get_data_paths, get_outputs_pat
 import utils as util
 
 CustomArgs = util.namedtuple_with_defaults(
-    'CustomArgs', 'flags type target action', (None, ) * 4)
+    'CustomArgs', 'flags type target action help', (None, ) * 5)
 
 
 class BaseRunner:
@@ -46,8 +46,6 @@ class BaseRunner:
         args.add_argument('-s', '--seed', default=None, type=int,
                           help='Seed to enable reproducibility')
 
-        self.static_arguments.add_argument('-t', '--transfer_learning', default=False, action="store_true",
-                                           help='Use the -r args to do transfer learnign (default: None)')
 
     def add_dynamic_arguments(self):
         """
@@ -62,7 +60,11 @@ class BaseRunner:
                        target='data_loader;args;batch_size'),
             CustomArgs(['--save_dir'], type=str, target='trainer;save_dir'),
             CustomArgs(['--data_dir'], type=str,
-                       target='data_loader;args;data_dir')
+                       target='data_loader;args;data_dir'),
+            CustomArgs(['-t', '--transfer_learning'],
+                       target="trainer;pre_training",
+                       action="store_true",
+                       help='Use the -r args to do transfer learnign (default: False)')
         ]
 
     def parse(self):

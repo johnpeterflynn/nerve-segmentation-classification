@@ -8,9 +8,11 @@ class BaseTrainer:
     """
     Base class for all trainers
     """
+
     def __init__(self, model, criterion, metric_ftns, optimizer, config, experiment):
         self.config = config
-        self.logger = config.get_logger('trainer', config['trainer']['verbosity'])
+        self.logger = config.get_logger(
+            'trainer', config['trainer']['verbosity'])
         self.experiment = experiment
 
         # setup GPU device if available, move model into configured device
@@ -43,8 +45,9 @@ class BaseTrainer:
 
         self.checkpoint_dir = config.save_dir
 
-        # setup visualization writer instance                
-        self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'], experiment)
+        # setup visualization writer instance
+        self.writer = TensorboardWriter(
+            config.log_dir, self.logger, cfg_trainer['tensorboard'], experiment)
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
@@ -81,7 +84,8 @@ class BaseTrainer:
                 try:
                     # check whether model performance improved or not, according to specified metric(mnt_metric)
                     improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-                               (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
+                               (self.mnt_mode ==
+                                'max' and log[self.mnt_metric] >= self.mnt_best)
                 except KeyError:
                     self.logger.warning("Warning: Metric '{}' is not found. "
                                         "Model performance monitoring is disabled.".format(self.mnt_metric))
@@ -99,7 +103,7 @@ class BaseTrainer:
                                      "Training stops.".format(self.early_stop))
                     break
             if improved:
-                # Save the model if there is an improvement immediately 
+                # Save the model if there is an improvement immediately
                 self._save_checkpoint(epoch, save_best=True)
             elif epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=False)
@@ -138,7 +142,8 @@ class BaseTrainer:
             'monitor_best': self.mnt_best,
             'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+        filename = str(self.checkpoint_dir /
+                       'checkpoint-epoch{}.pth'.format(epoch))
         torch.save(state, filename)
         self.logger.info("Saving checkpoint: {} ...".format(filename))
         if save_best:
@@ -154,10 +159,14 @@ class BaseTrainer:
         """
         resume_path = str(resume_path)
         self.logger.info("Loading checkpoint: {} ...".format(resume_path))
-        checkpoint = torch.load(resume_path, map_location=torch.device(self.device))
-        #self.start_epoch = checkpoint['epoch'] + 1
-        self.start_epoch =  1
-        #self.mnt_best = checkpoint['monitor_best']
+        checkpoint = torch.load(
+            resume_path, map_location=torch.device(self.device))
+        
+        if self.use_transfer_learning():
+            self.start_epoch = 1
+        else:
+            self.start_epoch = checkpoint['epoch'] + 1
+            self.mnt_best = checkpoint['monitor_best']
 
         # load architecture params from checkpoint.
         if checkpoint['config']['arch'] != self.config['arch']:
@@ -165,19 +174,25 @@ class BaseTrainer:
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
         self._load_new_stat_dict(self.model, checkpoint['state_dict'])
 
-        
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if checkpoint['config']['optimizer']['type'] != self.config['optimizer']['type']:
             self.logger.warning("Warning: Optimizer type given in config file is different from that of checkpoint. "
                                 "Optimizer parameters not being resumed.")
         else:
-            pass
-            #self.optimizer.load_state_dict(checkpoint['optimizer'])
+            if not self.use_transfer_learning():
+                self.optimizer.load_state_dict(checkpoint['optimizer'])
 
-        self.logger.info("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+        self.logger.info(
+            "Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+
+    def use_transfer_learning(self):
+        """
+            Returns true if we are using transfer learning
+        """
+        return 'pre_training' in self.config['trainer'] and self.config['trainer']['pre_training']
 
     def _load_new_stat_dict(self, object_to_load, pretrained_dict):
-        
+
         model_dict = object_to_load.state_dict()
 
         # Overwrite conflicting keys
@@ -185,7 +200,5 @@ class BaseTrainer:
             if k in model_dict and pretrained_dict[k].shape != model_dict[k].shape:
                 pretrained_dict[k] = model_dict[k]
 
-        # 2. overwrite entries in the existing state dict
-        #model_dict.update(pretrained_dict) 
-        # 3. load the new state dict
+        # load the new state dict
         object_to_load.load_state_dict(pretrained_dict)

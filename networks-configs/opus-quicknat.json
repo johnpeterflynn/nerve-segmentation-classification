@@ -1,7 +1,7 @@
 {
     "name": "QuickNat",
     "n_gpu": 1,
-    "seed": "None",
+    "seed": true,
     "arch": {
         "type": "QuickNat",
         "args": {
