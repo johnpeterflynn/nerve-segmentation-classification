@@ -64,8 +64,8 @@ class OPUSDataset(Dataset):
             self.use_cross_validation(cross_val, phase)
 
         print(phase + " dataset:" + ", ".join(self.patients_list))
-
         
+
         # =============================================================================
         # TESTING files
         # =============================================================================
@@ -85,26 +85,37 @@ class OPUSDataset(Dataset):
         self.labels_list = [b for _, b, _ in sorted_data]
         self.classes_list = [c for _, _, c in sorted_data]
 
-
     def use_cross_validation(self, cross_val, phase):
 
+        # The seed is set here intentionally, to avoid discrepancies across
+        # network configuration files for opus
         seed = 123
         random.seed(seed)
-        np.random.seed(seed)
 
         valset_idx = int(cross_val['valset_idx'])
         n_fold = int(cross_val['n_fold'])
-
-        fold_size = math.ceil(len(self.patients_list)/n_fold)
+        n_patients = len(self.patients_list)
+        fold_size = math.floor(n_patients/n_fold)
 
         random.shuffle(self.patients_list)
-        idx_full = np.arange(len(self.patients_list))
+        idx_full = np.arange(n_patients)
+
+
+        start_idx = valset_idx * fold_size
+
+        # if it is the last fold
+        # then use rest of the data points 
+        if valset_idx == (n_fold - 1): 
+            end_idx = n_patients
+        else:
+            end_idx = fold_size*(valset_idx + 1)
+        
 
         if phase == 'train':
-            train_idx = np.delete(idx_full, np.arange(valset_idx * fold_size, fold_size*(valset_idx + 1)))
+            train_idx = np.delete(idx_full, np.arange(start_idx, end_idx))
             self.patients_list = [self.patients_list[i] for i in train_idx]
         if phase == 'val':
-            self.patients_list = self.patients_list[valset_idx * fold_size: fold_size*(valset_idx + 1)]
+            self.patients_list = self.patients_list[start_idx: end_idx]
 
     def use_fixed_dataset(self, phase):
         if phase == 'train':
@@ -299,7 +310,8 @@ class OPUSDataLoader(BaseDataLoader):
         if training:
             self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, cross_val=cross_val,
                                        transform=transforms.Compose([
-                                           elastic_deform(augmentation_probability),
+                                           elastic_deform(
+                                               augmentation_probability),
                                            Rescale(input_size),
                                            ToTensor()]))
         else:
