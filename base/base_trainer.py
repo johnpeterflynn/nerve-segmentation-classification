@@ -105,8 +105,21 @@ class BaseTrainer:
             if improved:
                 # Save the model if there is an improvement immediately
                 self._save_checkpoint(epoch, save_best=True)
+                self.log_best_model_validation_results(log)
             elif epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=False)
+
+    def log_best_model_validation_results(self, log):
+        """
+            Whenever the results imporove, this means we have a new
+            record (best_model), So we log the validation metrics 
+            using a different metric so that we can use it later
+            when running cross_validation ,for example, to select
+            the best model
+        """
+        log = {k: v for k, v in log.items() if k.split("_")[0] == "val"}
+        log.update(**{'best_'+k: v for k, v in log.items()})
+        self.experiment.log_metrics(**log)
 
     def _prepare_device(self, n_gpu_use):
         """
