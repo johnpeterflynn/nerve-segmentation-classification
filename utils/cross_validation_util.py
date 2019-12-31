@@ -27,19 +27,41 @@ def parse_polyaxon_output(group_number):
     return data
 
 
-def evaluate(result_df):
-    result_df.sort_values(by="best_val_loss")
+def evaluate(result_df, metric, best_definition):
+
+    # filter out all zeros metrics
+    # data = data.loc[:, (data != 0).all(axis=0)]
+
+    result_df = result_df.sort_values(by=metric)
+
+    if best_definition == "max":
+        idx = result_df[metric].idxmax()
+    elif best_definition == "min":
+        idx = result_df[metric].idxmin()
+    else:
+        raise Exception("Invalid best_definition value")
+
+    best_metric_value = result_df[metric][idx]
+    experiment_number = result_df["id"][idx]
+
     print(result_df)
+
+    print(" ".join(["Best", metric, "=", str(best_metric_value)]))
+    print(" ".join(["Experiment Number", "=", str(experiment_number)]))
+
 
 if __name__ == "__main__":
 
     args = argparse.ArgumentParser(description="Cross Validatin Calculator")
     args.add_argument("-g", "--group", type=int, required=True,
                       help="Polyaxon Experiment Group number")
+    args.add_argument("-b", "--best-criterion-def", type=str,
+                      choices={"max", "min"}, required=True)
+    args.add_argument("-m", "--metric", type=str, required=True,
+                      choices={"best_val_loss", "val_dice_agreement_in_samples", "val_iou_samples_per_label"})
 
     args = args.parse_args()
-        
 
     results_df = parse_polyaxon_output(args.group)
 
-    evaluate(results_df)
+    evaluate(results_df, args.metric, args.best_criterion_def)
