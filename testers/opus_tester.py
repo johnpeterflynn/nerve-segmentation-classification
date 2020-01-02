@@ -84,7 +84,7 @@ class OpusTester(BaseRunner):
         model.enable_test_dropout()
 
         with torch.no_grad():
-            for i, (data, target, name) in enumerate(tqdm(data_loader)):
+            for i, (data, target, idx) in enumerate(tqdm(data_loader)):
                 data, target = data.to(self.device), target.to(self.device)
                 output, samples = util.sample_and_compute_mean(
                     model, data, self.metrics_sample_count, 2, self.device)
@@ -107,9 +107,10 @@ class OpusTester(BaseRunner):
                         total_metrics[i] += s
 
                 output = util.argmax_over_dim(output, dim=1)
-                for idx in range(data.shape[0]):
+                class_label  = data_loader.dataset.classes_list[idx]
+                for i in range(data.shape[0]):
                     results_list.append(
-                        (data[idx, ...], samples[idx, ...], target[idx, ...], metrics_results, output[idx, ...], name))
+                        (data[i, ...], samples[i, ...], target[i, ...], metrics_results, output[i, ...], class_label))
 
                 metrics_results = []
 
@@ -118,7 +119,7 @@ class OpusTester(BaseRunner):
         samples = torch.cat([tup[1].unsqueeze(0) for tup in results_list])
         target = torch.cat([tup[2].unsqueeze(0) for tup in results_list])
         output = torch.cat([tup[4].unsqueeze(0) for tup in results_list])
-        names = [tup[5].item() for tup in results_list]
+        class_labels = [tup[5] for tup in results_list]
 
         save_dir = config['trainer']['save_dir']
         grid = util.build_segmentation_grid(self.metrics_sample_count, target, data, samples, output)
@@ -131,9 +132,9 @@ class OpusTester(BaseRunner):
         with open(Path(save_dir) / "test-results.csv", "w") as f:
             logger.info(", ".join([metric.__name__ for metric in metric_fns]) + ",label") 
             f.writelines(", ".join([metric.__name__ for metric in metric_fns]) + ",label" + "\n") 
-            for metrics, b, c in zip(metrics_results, names, output):
-                f.writelines(", ".join([str(metric) for metric in metrics]) + "," + str(b) + "\n")
-                logger.info(", ".join([str(metric) for metric in metrics]) +  "," + str(b))
+            for metrics, label, c in zip(metrics_results, class_labels, output):
+                f.writelines(", ".join([str(metric) for metric in metrics]) + "," + str(label) + "\n")
+                logger.info(", ".join([str(metric) for metric in metrics]) +  "," + str(label))
                 util.save_img(c.cpu()[0], save_dir, i)
                 i = i + 1
 
