@@ -43,7 +43,7 @@ class OpusTester(BaseRunner):
         experiment = Experiment()
         experiment.set_name("Test")
 
-        self.metrics_sample_count = config['trainer']['metrics_sample_count']
+        self.metrics_sample_count = config['trainer']['mc_sample_count']['val_test']
         # setup data_loader instances
         data_loader = getattr(module_data, config['data_loader']['type'])(
             config['data_loader']['args']['data_dir'],

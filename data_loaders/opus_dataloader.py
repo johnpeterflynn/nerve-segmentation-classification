@@ -62,16 +62,15 @@ class OPUSDataset(Dataset):
             self.use_fixed_dataset(phase)
         else:
             self.use_cross_validation(cross_val, phase)
-
-        print(phase + " dataset:" + ", ".join(self.patients_list))
         
-
         # =============================================================================
         # TESTING files
         # =============================================================================
         if phase == 'test':
             # patients for testing
             self.patients_list = ('patient_012',)
+
+        print(phase + " dataset:" + ", ".join(self.patients_list))
 
         # Load patient data
         for x in self.patients_list:
@@ -121,11 +120,11 @@ class OPUSDataset(Dataset):
         if phase == 'train':
             # patients for training
             self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
-                                  'patient_006', 'patient_007', 'patient_008', 'patient_009', 'patient_010')  # complete
+                                  'patient_007', 'patient_008', 'patient_009', 'patient_010') 
 
         if phase == 'val':
             # patients for validation
-            self.patients_list = ('patient_011',)
+            self.patients_list = ('patient_006', 'patient_011',)
 
     def _load_patient(self, data_path_patient):
         """Load patient data from path"""
