@@ -35,10 +35,19 @@ class OpusTester(BaseRunner):
     def add_static_arguments(self):
         super().add_static_arguments()
 
+        self.static_arguments.add_argument("--suffix", type=str, default=None,
+            help="Use this prefix when storing any file realted to this test")
+
     def add_dynamic_arguments(self):
         super().add_dynamic_arguments()
 
     def _run(self, config):
+
+        # This should never be done, but the framework
+        # needs to be update later to give access to the variables
+        # that are not network-realted, but for control purposes
+        control_args = self.static_arguments.parse_args()
+
         logger = config.get_logger('test')
         experiment = Experiment()
         experiment.set_name("Test")
@@ -123,20 +132,25 @@ class OpusTester(BaseRunner):
 
         save_dir = config['trainer']['save_dir']
         grid = util.build_segmentation_grid(self.metrics_sample_count, target, data, samples, output)
-        save_grid(grid, save_dir)
+      
+        if control_args.suffix is not None:
+            save_grid(grid, save_dir, control_args.suffix)
+        else:
+            save_grid(grid, save_dir)
 
-        i = 0
         metrics_results = [tup[3] for tup in results_list]
         
-
-        with open(Path(save_dir) / "test-results.csv", "w") as f:
+        save_dir_csv = Path(save_dir) / 'test-csv/'
+        save_dir_csv.mkdir(parents=True, exist_ok=True)
+        target_csv = "test-results.csv"
+        if control_args.suffix is not None:
+            target_csv = f"test-results-{control_args.suffix}.csv"
+        with open(save_dir_csv / target_csv, "w") as f:
             logger.info(", ".join([metric.__name__ for metric in metric_fns]) + ",label") 
             f.writelines(", ".join([metric.__name__ for metric in metric_fns]) + ",label" + "\n") 
-            for metrics, label, c in zip(metrics_results, class_labels, output):
+            for metrics, label in zip(metrics_results, class_labels):
                 f.writelines(", ".join([str(metric) for metric in metrics]) + "," + str(label) + "\n")
                 logger.info(", ".join([str(metric) for metric in metrics]) +  "," + str(label))
-                util.save_img(c.cpu()[0], save_dir, i)
-                i = i + 1
 
         
         n_samples = len(data_loader.sampler)
