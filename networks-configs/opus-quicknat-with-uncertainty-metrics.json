@@ -24,7 +24,7 @@
         "type": "OPUSDataLoader",
         "args": {
             "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
-            "batch_size": 1,
+            "batch_size": 2,
             "shuffle": true,
             "validation_split": 0,
             "num_workers": 2,
@@ -65,7 +65,7 @@
         "tensorboard": true,
         "mc_sample_count": {
             "train": 1,
-            "val_test": 5
+            "val_test": 15
         },
         "pre_training": false
     }
