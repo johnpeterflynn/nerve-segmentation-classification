@@ -7,8 +7,6 @@ saved/*
 *.pyc
 data/*
 .vscode/*
-<<<<<<< HEAD
 .idea/
-=======
 data
->>>>>>> john-opus-migration
+

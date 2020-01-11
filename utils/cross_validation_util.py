@@ -3,9 +3,11 @@ from io import StringIO
 import csv
 import pandas as pd
 import argparse
+from polyaxon_client import PolyaxonClient
+from functools import reduce
 
 
-def parse_polyaxon_output(group_number):
+def parse_polyaxon_output(args):
     """
         Query Polyaxon for Experiment group with group_number
         and returns a df with the result (metrics  from experiments)
@@ -15,16 +17,26 @@ def parse_polyaxon_output(group_number):
         @return:
             df
     """
+    pc = PolyaxonClient()
+    experiments = pc.experiment_group.list_experiments(
+        args.user, args.project, args.group)
 
-    results_cmd = f'polyaxon group -g {group_number} experiments  -m'
-    cmds = [r'sed -e "s/[0-9]\+h [0-9]\+m/irrelevant/g"', 'sed "s/^ *//g"',
-            r'sed "s/ \+/,/g"',  'sed -e "1,12d"', 'sed -e "2d"']
+    alldict = [exp['last_metric'] for exp in experiments['results']]
+    metrics = reduce(lambda x, y: x.union(y.keys()), alldict, set())
 
-    cmd = "| ".join([results_cmd, *cmds])
-    stream = os.popen(cmd)
-    data = pd.read_csv(stream)
+    results = {}
+    # init the keys to empty lists
+    allkeys = ['id'] + list(metrics)
+    results = {key: [] for key in allkeys}
 
-    return data
+    for exp in experiments['results']:
+        results['id'].append(exp['id'])
+        for metric in metrics:
+            val = exp['last_metric'][metric] if metric in exp['last_metric'] else None
+            results[metric].append(val)
+
+    df = pd.DataFrame(results, columns=results.keys())
+    return df
 
 
 def evaluate(result_df, metric, best_definition):
@@ -55,6 +67,10 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser(description="Cross Validatin Calculator")
     args.add_argument("-g", "--group", type=int, required=True,
                       help="Polyaxon Experiment Group number")
+    args.add_argument("-p", "--project", type=str, required=True,
+                      help="Polyaxon Project Name")
+    args.add_argument("-u", "--user", type=str, required=True,
+                      help="Polyaxon username")
     args.add_argument("-b", "--best-criterion-def", type=str,
                       choices={"max", "min"}, required=True)
     args.add_argument("-m", "--metric", type=str, required=True,
@@ -62,6 +78,6 @@ if __name__ == "__main__":
 
     args = args.parse_args()
 
-    results_df = parse_polyaxon_output(args.group)
+    results_df = parse_polyaxon_output(args)
 
     evaluate(results_df, args.metric, args.best_criterion_def)

@@ -4,7 +4,16 @@ import csv
 import pandas as pd
 import argparse
 from pathlib import Path
+"""
+    When running a group of experiments for opus,
+    This util can be used to run the testing pipleline 
+    for all the experiments in the group in one polyaxon experiment
+    It helps to get all the .csv files from all experiments in one place.
 
+    This file supports only testers/opus_test.py, but can be easily adjusted 
+    to work for other cases. Please extend this file as we go. 
+
+"""
 
 def build_group_dir(args):
     """
@@ -49,7 +58,7 @@ def genereate_experiments_dir(group_path: Path, model_name):
 
 if __name__ == "__main__":
 
-    args = argparse.ArgumentParser(description="Cross Validatin Calculator")
+    args = argparse.ArgumentParser(description="Opus group tester")
     args.add_argument("-g", "--group", type=int, required=True,
                       help="Polyaxon Experiment Group number")
     args.add_argument("-p", "--project", type=str, required=True,
