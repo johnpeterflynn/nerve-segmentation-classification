@@ -38,19 +38,22 @@ class OPUSTrainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
-        for batch_idx, (data, target, _) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device)
+        for batch_idx, (data, target_seg, target_cl) in enumerate(self.data_loader):
+            data, target_seg, target_cl = data.to(self.device), target_seg.to(self.device), target_cl.to(self.device)
 
             self.optimizer.zero_grad()
             output = self.model(data)
-            loss = self.criterion(output, target)
+            loss = self.criterion(output, target_seg, target_cl)
             loss.backward()
             self.optimizer.step()
 
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(output, target))
+                if met.__name__ == "accuracy":
+                    self.train_metrics.update(met.__name__, met(output[1], target_cl))
+                else:
+                    self.train_metrics.update(met.__name__, met(output[0], target_seg))
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
@@ -83,20 +86,23 @@ class OPUSTrainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target, _) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+            for batch_idx, (data, target_seg, target_cl) in enumerate(self.valid_data_loader):
+                data, target_seg, target_cl = data.to(self.device), target_seg.to(self.device), target_cl.to(self.device)
 
                 output = self.model(data)
-                loss = self.criterion(output, target)
+                loss = self.criterion(output, target_seg, target_cl)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(output, target))
+                    if met.__name__ == "accuracy":
+                        self.valid_metrics.update(met.__name__, met(output[1], target_cl))
+                    else:
+                        self.valid_metrics.update(met.__name__, met(output[0], target_seg))
 
                 data_cpu = data.cpu()
                 self._visualize_input(data_cpu)
-                self._visualize_prediction(data_cpu, output.cpu(), target.cpu())
+                self._visualize_prediction(data_cpu, output[0].cpu(), target_seg.cpu())
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():

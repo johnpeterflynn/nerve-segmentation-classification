@@ -82,10 +82,7 @@ class ResUltNet(BaseModel):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AvgPool2d(7, stride=1)
 
-        #for param in self.parameters():
-        #    param.requires_grad = False
-
-        self.fc = nn.Linear(25088 * block.expansion, num_classes) # 512
+        self.fc = nn.Linear(512 * block.expansion, num_classes) # 512
         #self.fc2 = nn.Linear(100, num_classes)  # 512
         #nn.init.uniform_(self.fc.weight, 2, 2)
         #nn.init.uniform_(self.fc.bias, 2, 2)
@@ -115,7 +112,7 @@ class ResUltNet(BaseModel):
 
         print('Weight: ', self.fc.weight)
         print('Bias: ', self.fc.bias)
- 
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
