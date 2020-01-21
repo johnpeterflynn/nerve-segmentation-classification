@@ -30,7 +30,11 @@
             "num_workers": 2,
             "input_size": 400,
             "augmentation_probability": 0.5,
-            "with_idx": true
+            "with_idx": true,
+            "cross_val": {
+                "n_fold": 5,
+                "valset_idx": 0
+            }
         }
     },
     "optimizer": {

@@ -1,13 +1,16 @@
-import os
 import logging
+import os
+import random
+from datetime import datetime
+from functools import partial, reduce
+from operator import getitem
+from pathlib import Path
+
 import numpy as np
 import torch
-from pathlib import Path
-from functools import reduce, partial
-from operator import getitem
-from datetime import datetime
+
 from logger import setup_logging
-from utils import read_json, write_json, get_polyaxon_resume_file
+from utils import get_polyaxon_resume_file, read_json, write_json
 
 
 class ConfigParser:
@@ -73,6 +76,7 @@ class ConfigParser:
         if args.seed is not None:
             # fix random seeds for reproducibility
             seed = args.seed
+            random.seed(seed)
             torch.manual_seed(seed)
             torch.backends.cudnn.deterministic = True
             torch.backends.cudnn.benchmark = False
