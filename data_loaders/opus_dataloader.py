@@ -119,12 +119,12 @@ class OPUSDataset(Dataset):
     def use_fixed_dataset(self, phase):
         if phase == 'train':
             # patients for training
-            self.patients_list = ('patient_001', 'patient_002', 'patient_003', 'patient_004', 'patient_005',
-                                  'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_006')
+            self.patients_list = ('patient_001',)# 'patient_002', 'patient_003', 'patient_004', 'patient_005',
+                                  #'patient_007', 'patient_008', 'patient_009', 'patient_010', 'patient_006')
 
         if phase == 'val':
             # patients for validation
-            self.patients_list = ('patient_011',)
+            self.patients_list = ('patient_001',)
 
     def _load_patient(self, data_path_patient):
         """Load patient data from path"""
