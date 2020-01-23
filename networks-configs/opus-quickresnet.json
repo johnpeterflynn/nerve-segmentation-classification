@@ -26,10 +26,10 @@
             "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
             "batch_size": 2,
             "shuffle": true,
-            "validation_split": 0.1,
+            "validation_split": 0,
             "num_workers": 2,
             "input_size": 400,
-            "augmentation_probability": 0
+            "augmentation_probability": 0.5
         }
     },
     "optimizer": {
@@ -54,7 +54,7 @@
     },
     "trainer": {
         "type": "OPUSMultitaskTrainer",
-        "epochs": 100,
+        "epochs": 200,
         "save_dir": "saved/",
         "save_period": 10,
         "verbosity": 2,
