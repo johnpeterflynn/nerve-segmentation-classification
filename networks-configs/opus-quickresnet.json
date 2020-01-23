@@ -40,7 +40,7 @@
             "amsgrad": true
         }
     },
-    "loss": "dice",
+    "loss": "combined_loss",
     "metrics": [
         "dice_score",
         "accuracy"
