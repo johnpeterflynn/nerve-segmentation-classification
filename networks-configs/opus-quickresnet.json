@@ -40,7 +40,7 @@
             "amsgrad": true
         }
     },
-    "loss": "combined_loss",
+    "loss": "dice",
     "metrics": [
         "dice_score",
         "accuracy"
@@ -53,7 +53,7 @@
         }
     },
     "trainer": {
-        "type": "OPUSTrainer",
+        "type": "OPUSMultitaskTrainer",
         "epochs": 100,
         "save_dir": "saved/",
         "save_period": 10,

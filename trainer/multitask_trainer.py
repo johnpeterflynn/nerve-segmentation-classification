@@ -5,7 +5,7 @@ from base import BaseTrainer
 from utils import inf_loop, MetricTracker, binary, impose_labels_on_image
 
 
-class OPUSTrainer(BaseTrainer):
+class OPUSMultitaskTrainer(BaseTrainer):
     """
     Trainer class
     """
@@ -86,7 +86,7 @@ class OPUSTrainer(BaseTrainer):
         self.model.eval()
         self.valid_metrics.reset()
         with torch.no_grad():
-            for batch_idx, (data, target_seg, target_cl) in enumerate(self.valid_data_loader):
+            for batch_idx, (data, target_seg, target_class) in enumerate(self.valid_data_loader):
                 data, target_seg, target_class = data.to(self.device), target_seg.to(self.device), target_class.to(self.device)
 
                 output_seg, output_class = self.model(data)
