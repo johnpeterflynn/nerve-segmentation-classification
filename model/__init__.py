@@ -5,3 +5,4 @@ from .probabilistic_quicknat import *
 from .resultnet import *
 from .simplenet import *
 from .quickresnet import *
+from .quickfcn import *
