@@ -24,13 +24,13 @@ _CLASS_RADIALIS = 'radialis'
 
 def class_str_to_index(class_str):
     if class_str == _CLASS_MEDIANUS:
-        out = 0
-    elif class_str == _CLASS_RADIALIS:
         out = 1
-    elif class_str == _CLASS_ULNARIS:
+    elif class_str == _CLASS_RADIALIS:
         out = 2
+    elif class_str == _CLASS_ULNARIS:
+        out = 3
     else:
-        out = -1
+        out = 0
 
     return out
 
