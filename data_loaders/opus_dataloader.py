@@ -194,8 +194,8 @@ class OPUSDataset(Dataset):
         #  accept sample tuple
         sample['labels'] = sample['labels'].squeeze()
         if self.with_idx:
-            return sample['image'][0:3, :, :].float(), sample['labels'].float(), cl, idx
-        return sample['image'][0:3, :, :].float(), sample['labels'].float(), cl
+            return sample['image'].float(), sample['labels'].float(), cl, idx
+        return sample['image'].float(), sample['labels'].float(), cl
 
 
 # =============================================================================
@@ -327,13 +327,11 @@ class OPUSDataLoader(BaseDataLoader):
             self.dataset = OPUSDataset('train', data_path=data_dir, with_idx=with_idx, cross_val=cross_val, transform=transforms.Compose([
                 elastic_deform(augmentation_probability),
                 Rescale(input_size),
-                NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensor()
                 ]))
         else:
             self.dataset = OPUSDataset('test', data_path=data_dir, with_idx=with_idx, cross_val=cross_val, transform=transforms.Compose([
                 Rescale(input_size),
-                NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                 ToTensor()
             ]))
 
@@ -346,7 +344,6 @@ class OPUSDataLoader(BaseDataLoader):
                                               cross_val=self.cross_val,
                                               transform=transforms.Compose([
                                                   Rescale(self.input_size),
-                                                  NumpyNormalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                                                   ToTensor()]))
         batch_size = self.init_kwargs['batch_size']
         num_workers = self.init_kwargs['num_workers']
