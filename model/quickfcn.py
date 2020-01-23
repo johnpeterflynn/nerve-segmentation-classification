@@ -45,8 +45,7 @@ class QuickFCN(BaseModel):
         self.classifier = nn.Sequential(
             nn.Linear(40000, 25),
             nn.PReLU(),
-            nn.Linear(25,3),
-            nn.Softmax(dim=1)
+            nn.Linear(25,3)
         )
 
 
