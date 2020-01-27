@@ -1,9 +1,9 @@
 {
-    "name": "QuickNat",
+    "name": "QuickFCNClassifier",
     "n_gpu": 1,
-    "seed": true,
+    "seed": 0,
     "arch": {
-        "type": "QuickNat",
+        "type": "QuickFCNClassifier",
         "args": {
             "params": {
                 "num_channels": 7,
@@ -35,14 +35,14 @@
     "optimizer": {
         "type": "Adam",
         "args": {
-            "lr": 0.0001,
+            "lr": 0.00001,
             "weight_decay": 1e-3,
             "amsgrad": true
         }
     },
-    "loss": "dice",
+    "loss": "crossentropy_plu_loss",
     "metrics": [
-        "dice_score"
+        "accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -52,7 +52,7 @@
         }
     },
     "trainer": {
-        "type": "OPUSTrainer",
+        "type": "QuickFCNClassifierTrainer",
         "epochs": 100,
         "save_dir": "saved/",
         "save_period": 10,
