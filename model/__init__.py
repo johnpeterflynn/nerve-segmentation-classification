@@ -7,3 +7,4 @@ from .simplenet import *
 from .quickresnet import *
 from .quickfcn import *
 from .quickfcn_classifier import *
+from .softquickfcn import *

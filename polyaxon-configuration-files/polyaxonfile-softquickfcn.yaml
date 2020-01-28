@@ -1,0 +1,37 @@
+---
+version: 1
+
+kind: experiment
+
+framework: pytorch
+
+tags: [examples]
+
+build:
+  image: pytorch/pytorch:1.1.0-cuda10.0-cudnn7.5-runtime
+  build_steps:
+    - pip install -r requirements.txt
+    #- pip install tensorboardX
+  env_vars:
+    - ['res_path', '$POLYAXON_RUN_OUTPUTS_PATH']
+
+environment:
+  resources:
+    cpu:
+      requests: 3
+      limits: 8
+    memory:
+      requests: 5000
+      limits: 10000
+    gpu:
+      requests: 1
+      limits: 1
+
+params:  
+  conf_file: networks-configs/opus-softquickfcn.json
+  data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
+  seed: 0
+
+run:
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -s {{seed}} -e polyaxon --data_dir {{data_dir}}
+
