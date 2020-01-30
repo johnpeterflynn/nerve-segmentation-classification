@@ -74,6 +74,12 @@ class BaseTrainer:
             log.update(result)
 
             self.experiment.log_metrics(**log)
+            
+            self.writer.set_step(epoch)
+            if self.writer is not None:
+                for key, value in result.items():
+                    self.writer.add_scalar(key, value)
+
 
             # print logged informations to the screen
             for key, value in log.items():

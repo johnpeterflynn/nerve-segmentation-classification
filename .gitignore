@@ -9,4 +9,5 @@ data/*
 .vscode/*
 .idea/
 data
-
+*/output
+*/.Rproj.user

@@ -42,7 +42,7 @@ class OPUSWithUncertaityTrainer(Trainer):
             loss.backward()
             self.optimizer.step()
 
-            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
+            # self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             for met in self.metric_ftns:
                 if met.__name__ not in ["ged", "dice_agreement_in_samples", "iou_samples_per_label", "variance_ncc_samples"]:
@@ -88,8 +88,8 @@ class OPUSWithUncertaityTrainer(Trainer):
 
                 loss = self.criterion(output, target)
 
-                self.writer.set_step(
-                    (epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
+                # self.writer.set_step(
+                #     (epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
 
                 samples = util.argmax_over_dim(samples)

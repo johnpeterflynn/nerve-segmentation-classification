@@ -53,7 +53,7 @@ class QuicknatLIDCTrainer(BaseTrainer):
             loss.backward()
             self.optimizer.step()
 
-            self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
+            # self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
 
             if batch_idx % self.log_step == 0:
@@ -92,7 +92,7 @@ class QuicknatLIDCTrainer(BaseTrainer):
                 target = targets[:, rand_idx, ...]
                 targets = targets.unsqueeze(2)
 
-                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
+                # self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
 
                 # Loss
                 output = self.model(data)
