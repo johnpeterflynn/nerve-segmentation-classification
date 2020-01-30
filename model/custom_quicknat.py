@@ -245,17 +245,17 @@ class CustomQuickNat(BaseModel):
         """
         super(CustomQuickNat, self).__init__()
 
-        self.encode1 = sm.EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode1 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = params['num_filters']
-        self.encode2 = sm.EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.encode3 = sm.EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.encode4 = sm.EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode2 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode3 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode4 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.bottleneck = sm.DenseBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = 2 * params['num_filters']
-        self.decode1 = sm.DecoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.decode2 = sm.DecoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.decode3 = sm.DecoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.decode4 = sm.DecoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.decode1 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.decode2 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.decode3 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.decode4 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = params['num_filters']
         self.classifier = sm.ClassifierBlock(params)
 
