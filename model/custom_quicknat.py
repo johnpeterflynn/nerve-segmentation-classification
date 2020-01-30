@@ -250,7 +250,7 @@ class CustomQuickNat(BaseModel):
         self.encode2 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode3 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode4 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.bottleneck = sm.DenseBlock(params, se_block_type=se.SELayer.CSSE)
+        self.bottleneck = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = 2 * params['num_filters']
         self.decode1 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.decode2 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
