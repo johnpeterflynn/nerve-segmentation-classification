@@ -7,7 +7,7 @@
         "args": {
             "params": {
                 "num_channels": 7,
-                "num_filters": 64,
+                "num_filters": 32,
                 "kernel_h": 5,
                 "kernel_w": 5,
                 "stride_conv": 1,
@@ -15,7 +15,7 @@
                 "stride_pool": 2,
                 "num_class": 2,
                 "se_block": "false",
-                "drop_out": 0.2,
+                "drop_out": 0.05,
                 "kernel_c": 1
             }
         }
@@ -24,7 +24,7 @@
         "type": "OPUSDataLoader",
         "args": {
             "data_dir": "data/OPUS_nerve_segmentation/OPUS_data_3",
-            "batch_size": 2,
+            "batch_size": 4,
             "shuffle": true,
             "validation_split": 0,
             "num_workers": 2,
