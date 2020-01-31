@@ -244,21 +244,45 @@ class SoftQuickFCN(BaseModel):
         """
         super(SoftQuickFCN, self).__init__()
 
+        print('num channels: ', params['num_channels'])
+
         self.encode1s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode1c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.cross1ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross1sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross1cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross1cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+
         params['num_channels'] = params['num_filters']
         self.encode2s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode2c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.cross2ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross2sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross2cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross2cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+
         self.encode3s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode3c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.cross3ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross3sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross3cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross3cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+
         self.bottlenecks = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         self.bottleneckc = DenseBlock(params, se_block_type=se.SELayer.CSSE)
+        self.crossbss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.crossbsc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.crossbcc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.crossbcs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+
         params['num_channels'] = 2 * params['num_filters']
         self.decode1 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.decode2 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.decode3 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
+
         params['num_channels'] = params['num_filters']
         self.segmenter = sm.ClassifierBlock(params)
+
         ############Classification Task############
         self.classifier = nn.Sequential(
             nn.Linear(params['num_channels'] * 50 * 50, 25),
@@ -275,22 +299,40 @@ class SoftQuickFCN(BaseModel):
         """
         e1s, out1s, ind1s = self.encode1s.forward(input)
         e1c, out1c, ind1c = self.encode1c.forward(input)
-        e2s, out2s, ind2s = self.encode2s.forward(e1s)
-        e2c, out2c, ind2c = self.encode2c.forward(e1c)
-        e3s, out3s, ind3s = self.encode3s.forward(e2s)
-        e3c, out3c, ind3c = self.encode3c.forward(e2c)
+        e1s_sum = self.cross1ss * e1s + self.cross1sc * e1c
+        e1c_sum = self.cross1cc * e1s + self.cross1cs * e1c
+        print('cross1s sums: {}, {}'.format(self.cross1ss.sum(), self.cross1sc.sum()))
+        print('cross1c sums: {}, {}'.format(self.cross1cc.sum(), self.cross1cs.sum()))
 
-        bns = self.bottlenecks.forward(e3s)
-        bnc = self.bottleneckc.forward(e3c)
+        e2s, out2s, ind2s = self.encode2s.forward(e1s_sum)
+        e2c, out2c, ind2c = self.encode2c.forward(e1c_sum)
+        e2s_sum = self.cross2ss * e2s + self.cross2sc * e2c
+        e2c_sum = self.cross2cc * e2s + self.cross2cs * e2c
+        print('cross2s sums: {}, {}'.format(self.cross2ss.sum(), self.cross2sc.sum()))
+        print('cross2c sums: {}, {}'.format(self.cross2cc.sum(), self.cross2cs.sum()))
+
+        e3s, out3s, ind3s = self.encode3s.forward(e2s_sum)
+        e3c, out3c, ind3c = self.encode3c.forward(e2c_sum)
+        e3s_sum = self.cross3ss * e3s + self.cross3sc * e3c
+        e3c_sum = self.cross3cc * e3s + self.cross3cs * e3c
+        print('cross3s sums: {}, {}'.format(self.cross3ss.sum(), self.cross3sc.sum()))
+        print('cross3c sums: {}, {}'.format(self.cross3cc.sum(), self.cross3cs.sum()))
+
+        bns = self.bottlenecks.forward(e3s_sum)
+        bnc = self.bottleneckc.forward(e3c_sum)
+        bns_sum = self.crossbss * bns + self.crossbsc * bnc
+        bnc_sum = self.crossbcc * bns + self.crossvcs * bnc
+        print('crossbs sums: {}, {}'.format(self.crossbss.sum(), self.crossbsc.sum()))
+        print('crossbc sums: {}, {}'.format(self.crossbcc.sum(), self.crossbcs.sum()))
 
         ############Segmentation Task############
-        d3 = self.decode1.forward(bns, out3s, ind3s)
+        d3 = self.decode1.forward(bns_sum, out3s, ind3s)
         d2 = self.decode2.forward(d3, out2s, ind2s)
         d1 = self.decode3.forward(d2, out1s, ind1s)
         prob = self.segmenter.forward(d1)
 
         ############Classification Task############
-        bn_flattened = bnc.view(bnc.shape[0],-1) #reshape to (Batch Size, Input Dim Flattened)
+        bn_flattened = bnc_sum.view(bnc_sum.shape[0],-1) #reshape to (Batch Size, Input Dim Flattened)
         classes = self.classifier.forward(bn_flattened)
 
 
