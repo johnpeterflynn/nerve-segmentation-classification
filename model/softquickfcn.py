@@ -244,11 +244,15 @@ class SoftQuickFCN(BaseModel):
         """
         super(SoftQuickFCN, self).__init__()
 
-        self.encode1 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode1s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode1c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = params['num_filters']
-        self.encode2 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.encode3 = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.bottleneck = DenseBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode2s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode2c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode3s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.encode3c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
+        self.bottlenecks = DenseBlock(params, se_block_type=se.SELayer.CSSE)
+        self.bottleneckc = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         params['num_channels'] = 2 * params['num_filters']
         self.decode1 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.decode2 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
@@ -269,20 +273,24 @@ class SoftQuickFCN(BaseModel):
         :param input: X
         :return: probabiliy map
         """
-        e1, out1, ind1 = self.encode1.forward(input)
-        e2, out2, ind2 = self.encode2.forward(e1)
-        e3, out3, ind3 = self.encode3.forward(e2)
+        e1s, out1s, ind1s = self.encode1s.forward(input)
+        e1c, out1c, ind1c = self.encode1c.forward(input)
+        e2s, out2s, ind2s = self.encode2s.forward(e1s)
+        e2c, out2c, ind2c = self.encode2c.forward(e1c)
+        e3s, out3s, ind3s = self.encode3s.forward(e2s)
+        e3c, out3c, ind3c = self.encode3c.forward(e2c)
 
-        bn = self.bottleneck.forward(e3)
+        bns = self.bottlenecks.forward(e3s)
+        bnc = self.bottleneckc.forward(e3c)
 
         ############Segmentation Task############
-        d3 = self.decode1.forward(bn, out3, ind3)
-        d2 = self.decode2.forward(d3, out2, ind2)
-        d1 = self.decode3.forward(d2, out1, ind1)
+        d3 = self.decode1.forward(bns, out3s, ind3s)
+        d2 = self.decode2.forward(d3, out2s, ind2s)
+        d1 = self.decode3.forward(d2, out1s, ind1s)
         prob = self.segmenter.forward(d1)
 
         ############Classification Task############
-        bn_flattened = bn.view(bn.shape[0],-1) #reshape to (Batch Size, Input Dim Flattened)
+        bn_flattened = bnc.view(bnc.shape[0],-1) #reshape to (Batch Size, Input Dim Flattened)
         classes = self.classifier.forward(bn_flattened)
 
 
