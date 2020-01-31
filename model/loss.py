@@ -61,7 +61,7 @@ class CombinedLoss(_Loss):
             y_1 = torch.mean(
                 torch.mul(self.cross_entropy_loss.forward(cl, target_cl), weight.cuda()))
 
-        y_1 = 0 * y_1
+        #y_1 = 0 * y_1
 
         print('DL, CEL: ', y_2.item(), ', ', y_1.item())
         return y_1 + y_2
