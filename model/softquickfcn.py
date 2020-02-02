@@ -248,32 +248,32 @@ class SoftQuickFCN(BaseModel):
 
         self.encode1s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode1c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.cross1ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross1sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross1cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross1cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross1ss = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross1sc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross1cc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross1cs = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
 
         params['num_channels'] = params['num_filters']
         self.encode2s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode2c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.cross2ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross2sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross2cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross2cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross2ss = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross2sc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross2cc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross2cs = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
 
         self.encode3s = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode3c = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
-        self.cross3ss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross3sc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross3cc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.cross3cs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.cross3ss = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross3sc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross3cc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.cross3cs = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
 
         self.bottlenecks = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         self.bottleneckc = DenseBlock(params, se_block_type=se.SELayer.CSSE)
-        self.crossbss = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.crossbsc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.crossbcc = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
-        self.crossbcs = torch.nn.Parameter(data=torch.empty(1, params['num_channels']).uniform_(0, 1), requires_grad=True)
+        self.crossbss = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.crossbsc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.crossbcc = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
+        self.crossbcs = torch.nn.Parameter(data=torch.empty(1, params['num_filters'], 1, 1).uniform_(0, 1), requires_grad=True)
 
         params['num_channels'] = 2 * params['num_filters']
         self.decode1 = DecoderBlock(params, se_block_type=se.SELayer.CSSE)
@@ -321,7 +321,7 @@ class SoftQuickFCN(BaseModel):
         bns = self.bottlenecks.forward(e3s_sum)
         bnc = self.bottleneckc.forward(e3c_sum)
         bns_sum = self.crossbss * bns + self.crossbsc * bnc
-        bnc_sum = self.crossbcc * bns + self.crossvcs * bnc
+        bnc_sum = self.crossbcc * bns + self.crossbcs * bnc
         print('crossbs sums: {}, {}'.format(self.crossbss.sum(), self.crossbsc.sum()))
         print('crossbc sums: {}, {}'.format(self.crossbcc.sum(), self.crossbcs.sum()))
 
