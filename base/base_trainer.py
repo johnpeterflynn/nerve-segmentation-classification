@@ -185,7 +185,22 @@ class BaseTrainer:
         if checkpoint['config']['arch'] != self.config['arch']:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
-        self._load_new_stat_dict(self.model, checkpoint['state_dict'])
+
+        loaded_state_dict = checkpoint['state_dict']
+        state_dict = {}
+        for key, value in checkpoint['state_dict'].items():
+            state_dict[key.replace(".", "s.", 1)] = value
+
+        print('state dict:')
+        for key, value in state_dict.items():
+            print(key, ', ', value.shape)
+
+        print('model params:')
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                print(name, param.shape)
+
+        self._load_new_stat_dict(self.model, state_dict)
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if checkpoint['config']['optimizer']['type'] != self.config['optimizer']['type']:
@@ -214,4 +229,4 @@ class BaseTrainer:
                 pretrained_dict[k] = model_dict[k]
 
         # load the new state dict
-        object_to_load.load_state_dict(pretrained_dict)
+        object_to_load.load_state_dict(pretrained_dict, strict=False)
