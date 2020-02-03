@@ -53,7 +53,9 @@ class BaseTrainer:
             self._resume_checkpoint(config.resume)
         else:
             # Temporary
-            self._load_segmentation('/outputs/johnpeterflynn/multitask-common/groups/1406/122698/models/QuickNat/0203_053832/model_best.pth')
+            seg_path = '/outputs/johnpeterflynn/multitask-common/groups/1406/122698/models/QuickNat/0203_053832/model_best.pth'
+            classif_path = '/outputs/johnpeterflynn/multitask-common/experiments/122323/models/QuickFCNClassifier/0130_134509/model_best.pth'
+            self._load_seg_and_classif(seg_path, classif_path)
 
     @abstractmethod
     def _train_epoch(self, epoch):
@@ -173,16 +175,23 @@ class BaseTrainer:
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
 
-    def _load_segmentation(self, segmentation_path):
-        segmentation_path = str(segmentation_path)
-        self.logger.info("Loading segmentation: {} ...".format(segmentation_path))
-        loaded_state_dict = torch.load(segmentation_path,
+    def _load_seg_and_classif(self, segmentation_path, classification_path):
+
+        segmentation_state_dict = self._load_pretrain(segmentation_path, "_seg")
+        classification_state_dict = self._load_pretrain(classification_path, "_class")
+
+        self._soft_load_new_stat_dict(self.model, segmentation_state_dict, classification_state_dict)
+
+    def _load_pretrain(self, pretrain_path, postfix):
+        pretrain_path = str(pretrain_path)
+        self.logger.info("Loading pretraining state: {} ...".format(pretrain_path))
+        loaded_state_dict = torch.load(pretrain_path,
                                              map_location=torch.device(self.device))['state_dict']
 
         # Motify loaded_state_dict to match segmentation-specific parameters
         state_dict = {}
         for key, value in loaded_state_dict.items():
-            state_dict[key.replace(".", "_seg.", 1)] = value
+            state_dict[key.replace(".", postfix + ".", 1)] = value
 
         print('state dict:')
         for key, value in state_dict.items():
@@ -193,7 +202,7 @@ class BaseTrainer:
             if param.requires_grad:
                 print(name, param.shape)
 
-        self._soft_load_new_stat_dict(self.model, state_dict)
+        return state_dict
 
     def _resume_checkpoint(self, resume_path):
         """
@@ -237,7 +246,7 @@ class BaseTrainer:
         """
         return 'pre_training' in self.config['trainer'] and self.config['trainer']['pre_training']
 
-    def _soft_load_new_stat_dict(self, object_to_load, pretrained_dict):
+    def _soft_load_new_stat_dict(self, object_to_load, segmentation_dict, classification_dict):
         """
         Identical to _load_new_stat_dict() except keeps all parameters in model_dict that do not exist in
         pretrained_dict
@@ -247,8 +256,10 @@ class BaseTrainer:
         """
         model_dict = object_to_load.state_dict()
 
-        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and (model_dict[k].shape == pretrained_dict[k].shape)}
-        model_dict.update(pretrained_dict)
+        segmentation_dict = {k: v for k, v in segmentation_dict.items() if k in model_dict and (model_dict[k].shape == segmentation_dict[k].shape)}
+        model_dict.update(segmentation_dict)
+        classification_dict = {k: v for k, v in classification_dict.items() if k in model_dict and (model_dict[k].shape == classification_dict[k].shape)}
+        model_dict.update(classification_dict)
 
         object_to_load.load_state_dict(model_dict)
 
