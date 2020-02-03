@@ -54,12 +54,12 @@
     },
     "trainer": {
         "type": "OPUSMultitaskTrainer",
-        "epochs": 200,
+        "epochs": 300,
         "save_dir": "saved/",
-        "save_period": 10,
+        "save_period": 50,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 50,
+        "early_stop": 150,
         "tensorboard": true
     }
 }
