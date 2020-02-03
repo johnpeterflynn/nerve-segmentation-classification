@@ -51,6 +51,9 @@ class BaseTrainer:
 
         if config.resume is not None:
             self._resume_checkpoint(config.resume)
+        else:
+            # Temporary
+            self._load_segmentation('/outputs/johnpeterflynn/multitask-common/groups/1406/122698/models/QuickNat/0203_053832/model_best.pth')
 
     @abstractmethod
     def _train_epoch(self, epoch):
@@ -170,6 +173,28 @@ class BaseTrainer:
             torch.save(state, best_path)
             self.logger.info("Saving current best: model_best.pth ...")
 
+    def _load_segmentation(self, segmentation_path):
+        segmentation_path = str(segmentation_path)
+        self.logger.info("Loading segmentation: {} ...".format(segmentation_path))
+        loaded_state_dict = torch.load(segmentation_path,
+                                             map_location=torch.device(self.device))['state_dict']
+
+        # Motify loaded_state_dict to match segmentation-specific parameters
+        state_dict = {}
+        for key, value in loaded_state_dict.items():
+            state_dict[key.replace(".", "_seg.", 1)] = value
+
+        print('state dict:')
+        for key, value in state_dict.items():
+            print(key, ', ', value.shape)
+
+        print('model params:')
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                print(name, param.shape)
+
+        self._soft_load_new_stat_dict(self.model, state_dict)
+
     def _resume_checkpoint(self, resume_path):
         """
         Resume from saved checkpoints
@@ -192,21 +217,8 @@ class BaseTrainer:
             self.logger.warning("Warning: Architecture configuration given in config file is different from that of "
                                 "checkpoint. This may yield an exception while state_dict is being loaded.")
 
-        loaded_state_dict = checkpoint['state_dict']
-        state_dict = {}
-        for key, value in checkpoint['state_dict'].items():
-            state_dict[key.replace(".", "s.", 1)] = value
 
-        print('state dict:')
-        for key, value in state_dict.items():
-            print(key, ', ', value.shape)
-
-        print('model params:')
-        for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                print(name, param.shape)
-
-        self._load_new_stat_dict(self.model, state_dict)
+        self._load_new_stat_dict(self.model, checkpoint['state_dict'])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if checkpoint['config']['optimizer']['type'] != self.config['optimizer']['type']:
@@ -225,6 +237,21 @@ class BaseTrainer:
         """
         return 'pre_training' in self.config['trainer'] and self.config['trainer']['pre_training']
 
+    def _soft_load_new_stat_dict(self, object_to_load, pretrained_dict):
+        """
+        Identical to _load_new_stat_dict() except keeps all parameters in model_dict that do not exist in
+        pretrained_dict
+        :param object_to_load:
+        :param pretrained_dict:
+        :return:
+        """
+        model_dict = object_to_load.state_dict()
+
+        pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict and (model_dict[k].shape == pretrained_dict[k].shape)}
+        model_dict.update(pretrained_dict)
+
+        object_to_load.load_state_dict(model_dict)
+
     def _load_new_stat_dict(self, object_to_load, pretrained_dict):
 
         model_dict = object_to_load.state_dict()
@@ -235,4 +262,4 @@ class BaseTrainer:
                 pretrained_dict[k] = model_dict[k]
 
         # load the new state dict
-        object_to_load.load_state_dict(pretrained_dict, strict=False)
+        object_to_load.load_state_dict(pretrained_dict)

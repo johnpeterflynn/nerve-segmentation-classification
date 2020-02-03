@@ -31,8 +31,9 @@ params:
   conf_file: networks-configs/opus-softquickfcn.json
   data_dir: /data/OPUS_nerve_segmentation/OPUS_data_3/
   seed: 0
-  resume_path: /outputs/johnpeterflynn/multitask-common/groups/1392/122610/models/QuickNat/0202_142856/model_best.pth  
+  #resume_path: /outputs/johnpeterflynn/multitask-common/groups/1392/122610/models/QuickNat/0202_142856/model_best.pth  
  
 run:
-  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -s {{seed}} -e polyaxon --data_dir {{data_dir}} -r {{resume_path}} -t
+  cmd: python3 -u runners/generic_runner.py -c {{conf_file}} -s {{seed}} -e polyaxon --data_dir {{data_dir}}
+  #-r {{resume_path}} -t
 
