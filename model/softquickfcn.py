@@ -250,38 +250,38 @@ class SoftQuickFCN(BaseModel):
         self.encode1_class = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         cross1s_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
         cross1c_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
-        self.cross1ss = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross1s_init, requires_grad=True)
-        self.cross1sc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross1s_init), requires_grad=True)
-        self.cross1cc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross1c_init, requires_grad=True)
-        self.cross1cs = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross1c_init), requires_grad=True)
+        self.cross1ss = torch.ones(1, params['num_filters'], 1, 1) * cross1s_init
+        self.cross1sc = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross1s_init)
+        self.cross1cc = torch.ones(1, params['num_filters'], 1, 1) * cross1c_init
+        self.cross1cs = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross1c_init)
 
         params['num_channels'] = params['num_filters']
         self.encode2_seg = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode2_class = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         cross2s_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
         cross2c_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
-        self.cross2ss = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross2s_init, requires_grad=True)
-        self.cross2sc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross2s_init), requires_grad=True)
-        self.cross2cc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross2c_init, requires_grad=True)
-        self.cross2cs = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross2c_init), requires_grad=True)
+        self.cross2ss = torch.ones(1, params['num_filters'], 1, 1) * cross2s_init
+        self.cross2sc = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross2s_init)
+        self.cross2cc = torch.ones(1, params['num_filters'], 1, 1) * cross2c_init
+        self.cross2cs = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross2c_init)
 
         self.encode3_seg = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         self.encode3_class = EncoderBlock(params, se_block_type=se.SELayer.CSSE)
         cross3s_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
         cross3c_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
-        self.cross3ss = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross3s_init, requires_grad=True)
-        self.cross3sc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross3s_init), requires_grad=True)
-        self.cross3cc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * cross3c_init, requires_grad=True)
-        self.cross3cs = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - cross3c_init), requires_grad=True)
+        self.cross3ss = torch.ones(1, params['num_filters'], 1, 1) * cross3s_init
+        self.cross3sc = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross3s_init)
+        self.cross3cc = torch.ones(1, params['num_filters'], 1, 1) * cross3c_init
+        self.cross3cs = torch.ones(1, params['num_filters'], 1, 1) * (1 - cross3c_init)
 
         self.bottleneck_seg = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         self.bottleneck_class = DenseBlock(params, se_block_type=se.SELayer.CSSE)
         crossbs_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
         crossbc_init = torch.FloatTensor(1, 1).uniform_(0.05, 0.95)
-        self.crossbss = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * crossbs_init, requires_grad=True)
-        self.crossbsc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - crossbs_init), requires_grad=True)
-        self.crossbcc = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * crossbc_init, requires_grad=True)
-        self.crossbcs = torch.nn.Parameter(data=torch.ones(1, params['num_filters'], 1, 1) * (1 - crossbc_init), requires_grad=True)
+        self.crossbss = torch.ones(1, params['num_filters'], 1, 1) * crossbs_init
+        self.crossbsc = torch.ones(1, params['num_filters'], 1, 1) * (1 - crossbs_init)
+        self.crossbcc = torch.ones(1, params['num_filters'], 1, 1) * crossbc_init
+        self.crossbcs = torch.ones(1, params['num_filters'], 1, 1) * (1 - crossbc_init)
 
         params['num_channels'] = 2 * params['num_filters']
         self.decode1_seg = DecoderBlock(params, se_block_type=se.SELayer.CSSE)

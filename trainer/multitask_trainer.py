@@ -29,6 +29,43 @@ class OPUSMultitaskTrainer(BaseTrainer):
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
 
+        for param_group in optimizer.param_groups:
+            lr = param_group['lr']
+
+        print('lr: ', lr)
+
+        model.cross1ss = torch.nn.Parameter(data=model.cross1ss.to(self.device), requires_grad=True)
+        model.cross1sc = torch.nn.Parameter(data=model.cross1sc.to(self.device), requires_grad=True)
+        model.cross1cc = torch.nn.Parameter(data=model.cross1cc.to(self.device), requires_grad=True)
+        model.cross1cs = torch.nn.Parameter(data=model.cross1cs.to(self.device), requires_grad=True)
+
+        model.cross2ss = torch.nn.Parameter(data=model.cross2ss.to(self.device), requires_grad=True)
+        model.cross2sc = torch.nn.Parameter(data=model.cross2sc.to(self.device), requires_grad=True)
+        model.cross2cc = torch.nn.Parameter(data=model.cross2cc.to(self.device), requires_grad=True)
+        model.cross2cs = torch.nn.Parameter(data=model.cross2cs.to(self.device), requires_grad=True)
+
+        model.cross3ss = torch.nn.Parameter(data=model.cross3ss.to(self.device), requires_grad=True)
+        model.cross3sc = torch.nn.Parameter(data=model.cross3sc.to(self.device), requires_grad=True)
+        model.cross3cc = torch.nn.Parameter(data=model.cross3cc.to(self.device), requires_grad=True)
+        model.cross3cs = torch.nn.Parameter(data=model.cross3cs.to(self.device), requires_grad=True)
+
+        model.crossbss = torch.nn.Parameter(data=model.crossbss.to(self.device), requires_grad=True)
+        model.crossbsc = torch.nn.Parameter(data=model.crossbsc.to(self.device), requires_grad=True)
+        model.crossbcc = torch.nn.Parameter(data=model.crossbcc.to(self.device), requires_grad=True)
+        model.crossbcs = torch.nn.Parameter(data=model.crossbcs.to(self.device), requires_grad=True)
+
+        # Hack: Set a different learning rate for the cross-stitch parameters
+        optimizer.add_param_group({'params': [model.cross1ss, model.cross1sc, model.cross1cs, model.cross1cc,
+                                              model.cross2ss, model.cross2sc, model.cross2cs, model.cross2cc,
+                                              model.cross3ss, model.cross3sc, model.cross3cs, model.cross3cc,
+                                              model.crossbss, model.crossbsc, model.crossbcs, model.crossbcc],
+                                   'lr': lr * 100})
+
+        print('print param groups')
+        #for param_group in optimizer.param_groups:
+        #    print(param_group)
+
+
     def _train_epoch(self, epoch):
         """
         Training logic for an epoch
