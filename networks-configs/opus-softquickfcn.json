@@ -36,7 +36,7 @@
         "type": "Adam",
         "args": {
             "lr": 0.00004,
-            "weight_decay": 1e-4,
+            "weight_decay": 0,
             "amsgrad": true
         }
     },

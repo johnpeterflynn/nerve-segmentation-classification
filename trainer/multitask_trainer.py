@@ -80,7 +80,7 @@ class OPUSMultitaskTrainer(BaseTrainer):
 
             self.optimizer.zero_grad()
             output_seg, output_class = self.model(data)
-            loss = self.criterion((output_seg, output_class), target_seg, target_class)
+            loss = self.criterion((output_seg, output_class), target_seg, target_class, epoch)
             loss.backward()
             self.optimizer.step()
 
@@ -127,7 +127,7 @@ class OPUSMultitaskTrainer(BaseTrainer):
                 data, target_seg, target_class = data.to(self.device), target_seg.to(self.device), target_class.to(self.device)
 
                 output_seg, output_class = self.model(data)
-                loss = self.criterion((output_seg, output_class), target_seg, target_class)
+                loss = self.criterion((output_seg, output_class), target_seg, target_class, epoch)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
