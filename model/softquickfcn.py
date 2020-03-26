@@ -309,29 +309,21 @@ class SoftQuickFCN(BaseModel):
         e1c, out1c, ind1c = self.encode1_class.forward(input)
         e1s_sum = self.cross1ss * e1s + self.cross1sc * e1c
         e1c_sum = self.cross1cs * e1s + self.cross1cc * e1c
-        print('cross1s sums: {}, {}'.format(self.cross1ss.sum(), self.cross1sc.sum()))
-        print('cross1c sums: {}, {}'.format(self.cross1cc.sum(), self.cross1cs.sum()))
 
         e2s, out2s, ind2s = self.encode2_seg.forward(e1s_sum)
         e2c, out2c, ind2c = self.encode2_class.forward(e1c_sum)
         e2s_sum = self.cross2ss * e2s + self.cross2sc * e2c
         e2c_sum = self.cross2cs * e2s + self.cross2cc * e2c
-        print('cross2s sums: {}, {}'.format(self.cross2ss.sum(), self.cross2sc.sum()))
-        print('cross2c sums: {}, {}'.format(self.cross2cc.sum(), self.cross2cs.sum()))
 
         e3s, out3s, ind3s = self.encode3_seg.forward(e2s_sum)
         e3c, out3c, ind3c = self.encode3_class.forward(e2c_sum)
         e3s_sum = self.cross3ss * e3s + self.cross3sc * e3c
         e3c_sum = self.cross3cs * e3s + self.cross3cc * e3c
-        print('cross3s sums: {}, {}'.format(self.cross3ss.sum(), self.cross3sc.sum()))
-        print('cross3c sums: {}, {}'.format(self.cross3cc.sum(), self.cross3cs.sum()))
 
         bns = self.bottleneck_seg.forward(e3s_sum)
         bnc = self.bottleneck_class.forward(e3c_sum)
         bns_sum = self.crossbss * bns + self.crossbsc * bnc
         bnc_sum = self.crossbcs * bns + self.crossbcc * bnc
-        print('crossbs sums: {}, {}'.format(self.crossbss.sum(), self.crossbsc.sum()))
-        print('crossbc sums: {}, {}'.format(self.crossbcc.sum(), self.crossbcs.sum()))
 
         ############Segmentation Task############
         d3 = self.decode1_seg.forward(bns_sum, out3s, ind3s)

@@ -32,8 +32,6 @@ class OPUSMultitaskTrainer(BaseTrainer):
         for param_group in optimizer.param_groups:
             lr = param_group['lr']
 
-        print('lr: ', lr)
-
         model.cross1ss = torch.nn.Parameter(data=model.cross1ss.to(self.device), requires_grad=True)
         model.cross1sc = torch.nn.Parameter(data=model.cross1sc.to(self.device), requires_grad=True)
         model.cross1cc = torch.nn.Parameter(data=model.cross1cc.to(self.device), requires_grad=True)
@@ -60,11 +58,6 @@ class OPUSMultitaskTrainer(BaseTrainer):
                                               model.cross3ss, model.cross3sc, model.cross3cs, model.cross3cc,
                                               model.crossbss, model.crossbsc, model.crossbcs, model.crossbcc],
                                    'lr': lr * 250})
-
-        print('print param groups')
-        #for param_group in optimizer.param_groups:
-        #    print(param_group)
-
 
     def _train_epoch(self, epoch):
         """

@@ -66,5 +66,4 @@ class CombinedLoss(_Loss):
         y_1 = 0.1 * lambda_MI * y_1
         y_2 = lambda_SI * y_2
 
-        print('DL, CEL: ', y_2.item(), ', ', y_1.item())
         return y_1 + y_2
