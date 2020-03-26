@@ -59,7 +59,7 @@ class OPUSMultitaskTrainer(BaseTrainer):
                                               model.cross2ss, model.cross2sc, model.cross2cs, model.cross2cc,
                                               model.cross3ss, model.cross3sc, model.cross3cs, model.cross3cc,
                                               model.crossbss, model.crossbsc, model.crossbcs, model.crossbcc],
-                                   'lr': lr * 100})
+                                   'lr': lr * 250})
 
         print('print param groups')
         #for param_group in optimizer.param_groups:

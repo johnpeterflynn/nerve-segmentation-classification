@@ -35,7 +35,7 @@
     "optimizer": {
         "type": "Adam",
         "args": {
-            "lr": 0.00005,
+            "lr": 0.00004,
             "weight_decay": 1e-4,
             "amsgrad": true
         }
@@ -48,18 +48,18 @@
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 50,
-            "gamma": 0.6
+            "step_size": 350,
+            "gamma": 0.1
         }
     },
     "trainer": {
         "type": "OPUSMultitaskTrainer",
-        "epochs": 300,
+        "epochs": 500,
         "save_dir": "saved/",
         "save_period": 50,
         "verbosity": 2,
         "monitor": "min val_loss",
-        "early_stop": 150,
+        "early_stop": 350,
         "tensorboard": true
     }
 }
