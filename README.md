@@ -10,7 +10,7 @@ This repository contains several multi-task extensions of a U-Net model[1] to im
 
 `model/quickfcn.py` - Hard parameter sharing model [2]: QuickNAT nerve segmentation network with a fully connected layer for nerve classification attached to bottleneck.
 
-![](docs/pictures/hard-param-graphic.png)
+<img height="430" src="docs/pictures/hard-param-graphic.pngf">
 
 `model/softquickfcn.py` - Soft parameter sharing model [2]: QuickNAT nerve segmention network and a separate nerve classifier network with an identical encoder. Both networks are independently pretrained on their specific tasks. Encoders of both networks are then joined using Cross-stitch networks[3] for a second round of training.
 
