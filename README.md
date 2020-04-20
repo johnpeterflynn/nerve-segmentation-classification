@@ -10,7 +10,7 @@ This repository contains several multi-task extensions of a U-Net model[1] to im
 
 ## Networks
 
-`model/quicknat.py` - Vanilla [QuickNAT](https://github.com/ai-med/QuickNATv2) architecture for medical image segmentation. This network serves as a benchmark for segmentation results.
+`model/quicknat.py` - Vanilla [QuickNAT](https://github.com/ai-med/QuickNATv2) architecture very similar to [U-Net](https://github.com/zhixuhao/unet) but adapted for fast brain image segmentation. This network serves as a benchmark for segmentation results.
 
 `model/resultnet.py` - PyTorch [ResNet-18](https://github.com/pytorch/vision/blob/master/torchvision/models/resnet.py) adapted for nerve image classification. Similarly serves as a gold standard for classification results. Note that our multitask networks use an encoder + FCN classifier so we won't expect their accuracy to be as high as ResNet.
 
