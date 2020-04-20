@@ -22,6 +22,16 @@ This repository contains several multi-task extensions of a U-Net model[1] to im
 
 ![](docs/pictures/soft-param-graphic.gif)
 
+
+
+## Results
+
+We compare two different multitask learning extensions of QuickNAT. Hard parameter sharing uses the same encoder and bottleneck weights for classification and segmentation while soft parameter sharing optionally shares cross-stitch wrights between independent encoders.
+
+Below we see that both networks segment nerves well when the nerve class is predicted correctly (ground truth in red and prediction in blue). However when a nerve is misclassified, hard parameter sharing fails to predict an accurate segmentation. We hypothesize that this is because the tasks of segmentation and classification are quite distinct; the more the network learns about classification, the less it knows about segmentation. In contrast, soft parameter sharing segments nerves correctly even when they are misclassified. This is expected, because the classification and segmentation networks are still free to learn separately.
+
+Note: Replace image
+
 ## Dependencies
 
 * [PyTorch](https://github.com/pytorch/pytorch) - Python deep learning library
