@@ -24,7 +24,7 @@ pathlib==1.0.1
 pickleshare==0.7.5
 polystores==0.1.7
 prompt-toolkit==2.0.9
-psutil==5.4.7
+psutil==5.6.6
 python-dateutil==2.8.0
 pytz==2018.9
 PyWavelets==1.0.2
